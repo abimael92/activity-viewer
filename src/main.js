@@ -32,17 +32,17 @@ async function loadData() {
     const end = new Date();
     end.setUTCHours(23, 59, 59, 999);
     const start = new Date();
-    start.setMonth(end.getMonth() - 2);
+    start.setMonth(end.getMonth() - 12); // 12 months for GitHub-style graph
 
     const labels = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       labels.push(d.toISOString().split('T')[0]);
     }
 
-    const datasets = [];
+    const repoData = [];
     const colors = [
-      '#646cff', '#00d4aa', '#ff6b6b', '#ffa726', '#ab47bc',
-      '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
+      '#216e39', '#30a14e', '#40c463', '#9be9a8', '#ebedf0',
+      '#646cff', '#00d4aa', '#ff6b6b', '#ffa726', '#ab47bc'
     ];
 
     for (let i = 0; i < repos.length; i++) {
@@ -76,19 +76,27 @@ async function loadData() {
           }
         });
 
-        datasets.push({
-          label: repo.name,
-          data: Object.values(dailyCount),
-          fill: false,
-          borderColor: colors[i % colors.length],
-          backgroundColor: colors[i % colors.length] + '20',
-          tension: 0.4,
-          borderWidth: 2,
-          pointBackgroundColor: colors[i % colors.length],
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6
+        // Group by weeks (52 weeks)
+        const weeklyData = [];
+        for (let w = 0; w < 52; w++) {
+          const weekStart = new Date(start);
+          weekStart.setDate(weekStart.getDate() + w * 7);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+
+          let weekCommits = 0;
+          for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            weekCommits += dailyCount[dateStr] || 0;
+          }
+          weeklyData.push(weekCommits);
+        }
+
+        repoData.push({
+          name: repo.name,
+          weeklyData: weeklyData,
+          totalCommits: Object.values(dailyCount).reduce((a, b) => a + b, 0),
+          color: colors[i % colors.length]
         });
       } catch (error) {
         console.warn(`Error processing repo ${repo.name}:`, error);
@@ -96,7 +104,7 @@ async function loadData() {
       }
     }
 
-    if (datasets.length === 0) {
+    if (repoData.length === 0) {
       container.innerHTML = `
                 <div class="empty-state">
                     <h3>No commit data found</h3>
@@ -106,89 +114,27 @@ async function loadData() {
       return;
     }
 
-    // Create chart container
+    // Create single combined sparkline graph
     container.innerHTML = `
-            <div class="chart-container">
-                <h2>Repository Commit Activity</h2>
-                <div class="chart-wrapper">
-                    <canvas id="commitChart"></canvas>
+            <div class="combined-sparkline-container">
+                <h2>Combined Repository Activity</h2>
+                <div class="sparkline-legend">
+                    ${repoData.map(repo => `
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: ${repo.color}"></span>
+                            <span class="legend-name">${repo.name}</span>
+                            <span class="legend-commits">${repo.totalCommits} commits</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="combined-sparkline-wrapper">
+                    <canvas id="combinedSparkline" width="800" height="120"></canvas>
                 </div>
             </div>
         `;
 
-    const ctx = document.getElementById('commitChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels.filter((_, i) => i % 7 === 0), // Show weekly labels
-        datasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: 'rgba(255, 255, 255, 0.8)',
-              usePointStyle: true,
-              padding: 20
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            titleColor: '#ffffff',
-            bodyColor: '#ffffff',
-            borderColor: 'rgba(255, 255, 255, 0.2)'
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Commits per day',
-              color: 'rgba(255, 255, 255, 0.7)'
-            },
-            ticks: {
-              stepSize: 1,
-              color: 'rgba(255, 255, 255, 0.7)'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: 'Date',
-              color: 'rgba(255, 255, 255, 0.7)'
-            },
-            ticks: {
-              color: 'rgba(255, 255, 255, 0.7)',
-              maxTicksLimit: 8,
-              callback: function (value, index) {
-                const date = new Date(this.getLabelForValue(value));
-                return date.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric'
-                });
-              }
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.05)'
-            }
-          }
-        },
-        interaction: {
-          mode: 'nearest',
-          axis: 'x',
-          intersect: false
-        }
-      }
-    });
+    // Create the combined sparkline chart
+    createCombinedSparkline(repoData);
 
   } catch (error) {
     console.error('Error loading data:', error);
@@ -200,6 +146,39 @@ async function loadData() {
             </div>
         `;
   }
+}
+
+function createCombinedSparkline(repoData) {
+  const canvas = document.getElementById('combinedSparkline');
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height);
+
+  // Calculate bar width
+  const barWidth = width / 52;
+  const maxCommits = Math.max(...repoData.flatMap(repo => repo.weeklyData));
+
+  // Draw each repository's data
+  repoData.forEach(repo => {
+    const normalizedData = repo.weeklyData.map(val =>
+      maxCommits > 0 ? (val / maxCommits) * height : 0
+    );
+
+    // Draw bars for this repository
+    normalizedData.forEach((value, index) => {
+      if (value > 0) {
+        const x = index * barWidth;
+        const barHeight = value;
+        const y = height - barHeight;
+
+        ctx.fillStyle = repo.color;
+        ctx.fillRect(x, y, barWidth - 1, barHeight);
+      }
+    });
+  });
 }
 
 // Load data automatically on page load
