@@ -1,15 +1,15 @@
-/* Chart Container */
-.chart-container {
+/* Combined Sparkline Container */
+.combined-sparkline-container {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 16px;
     padding: 2rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     margin: 0 auto;
-    max-width: 1000px;
+    max-width: 900px;
 }
 
-.chart-container h2 {
+.combined-sparkline-container h2 {
     text-align: center;
     margin: 0 0 2rem 0;
     font-size: 1.5rem;
@@ -19,37 +19,108 @@
     background-clip: text;
 }
 
-.chart-wrapper {
-    height: 500px;
-    width: 100%;
-    position: relative;
+/* Sparkline Legend */
+.sparkline-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
 }
 
-/* Light theme adjustments for chart */
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.legend-name {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.legend-commits {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+}
+
+/* Combined Sparkline */
+.combined-sparkline-wrapper {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#combinedSparkline {
+    width: 100%;
+    height: 120px;
+    border-radius: 4px;
+}
+
+/* Light theme adjustments */
 @media (prefers-color-scheme: light) {
-    .chart-container {
+    .combined-sparkline-container {
         background: rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .sparkline-legend {
+        background: rgba(0, 0, 0, 0.05);
+    }
+    
+    .legend-name {
+        color: rgba(0, 0, 0, 0.9);
+    }
+    
+    .legend-commits {
+        color: rgba(0, 0, 0, 0.6);
+    }
+    
+    .combined-sparkline-wrapper {
+        background: rgba(0, 0, 0, 0.05);
         border: 1px solid rgba(0, 0, 0, 0.1);
     }
 }
 
-/* Responsive chart */
+/* Responsive */
 @media (max-width: 768px) {
-    .chart-container {
+    .combined-sparkline-container {
         padding: 1rem;
     }
     
-    .chart-wrapper {
-        height: 400px;
+    .sparkline-legend {
+        gap: 0.75rem;
+    }
+    
+    .legend-item {
+        font-size: 0.8rem;
+    }
+    
+    #combinedSparkline {
+        height: 80px;
     }
 }
 
 @media (max-width: 480px) {
-    .chart-wrapper {
-        height: 300px;
+    .sparkline-legend {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
     }
     
-    .chart-container h2 {
-        font-size: 1.3rem;
+    #combinedSparkline {
+        height: 60px;
     }
 }
