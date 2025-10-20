@@ -27,7 +27,7 @@ async function loadData() {
 
     const end = new Date();
     const start = new Date();
-    start.setDate(end.getDate() - 30); // Last 30 days for better bar chart readability
+    start.setDate(end.getDate() - 30);
 
     // Generate daily labels
     const labels = [];
@@ -49,9 +49,6 @@ async function loadData() {
       '#646cff', '#00d4aa', '#ff6b6b', '#ffa726', '#ab47bc',
       '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
     ];
-
-    // Prepare data for stacked bar chart
-    const dailyCommits = labels.map(() => ({})); // Array of objects for each day
 
     for (let i = 0; i < repos.length; i++) {
       const repo = repos[i];
@@ -76,11 +73,6 @@ async function loadData() {
             const index = dateMap[date];
             if (index !== undefined) {
               repoDailyCount[index]++;
-              // Add to the daily commits object for stacked chart
-              if (!dailyCommits[index][repo.name]) {
-                dailyCommits[index][repo.name] = 0;
-              }
-              dailyCommits[index][repo.name]++;
             }
           }
         });
@@ -117,15 +109,16 @@ async function loadData() {
     container.innerHTML = `
       <div class="chart-container">
         <h2>Daily Commit Activity (Last 30 Days)</h2>
-        <p class="chart-subtitle">Bar charts are better for aggregate daily data</p>
+        <p class="chart-subtitle">Click legend items to toggle repositories</p>
         <div class="chart-wrapper">
           <canvas id="commitChart"></canvas>
         </div>
-        <div class="chart-legend">
-          ${datasets.map(dataset => `
-            <div class="legend-item">
+        <div class="chart-legend" id="chartLegend">
+          ${datasets.map((dataset, index) => `
+            <div class="legend-item active" data-index="${index}">
               <span class="legend-color" style="background-color: ${dataset.backgroundColor}"></span>
               <span class="legend-name">${dataset.label}</span>
+              <span class="legend-toggle">✓</span>
             </div>
           `).join('')}
         </div>
@@ -133,7 +126,7 @@ async function loadData() {
     `;
 
     const ctx = document.getElementById('commitChart').getContext('2d');
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
@@ -146,6 +139,7 @@ async function loadData() {
           legend: { display: false },
           tooltip: {
             mode: 'index',
+            intersect: false,
             backgroundColor: 'rgba(0, 0, 0, 0.9)',
             titleColor: '#ffffff',
             bodyColor: '#ffffff',
@@ -155,13 +149,7 @@ async function loadData() {
             displayColors: true,
             callbacks: {
               title: (tooltipItems) => {
-                const date = new Date(tooltipItems[0].label);
-                return date.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                });
+                return tooltipItems[0].label;
               },
               label: (context) => {
                 return `${context.dataset.label}: ${context.parsed.y} commits`;
@@ -209,7 +197,6 @@ async function loadData() {
           axis: 'x',
           intersect: false
         },
-        // Grouped bars (side by side)
         datasets: {
           bar: {
             barPercentage: 0.8,
@@ -217,6 +204,22 @@ async function loadData() {
           }
         }
       }
+    });
+
+    // Add legend click handler after chart creation
+    document.getElementById('chartLegend').addEventListener('click', (e) => {
+      const legendItem = e.target.closest('.legend-item');
+      if (!legendItem) return;
+
+      const datasetIndex = parseInt(legendItem.dataset.index);
+      const meta = chart.getDatasetMeta(datasetIndex);
+
+      // Toggle visibility
+      meta.hidden = !meta.hidden;
+      legendItem.classList.toggle('inactive');
+      legendItem.querySelector('.legend-toggle').textContent = meta.hidden ? '✕' : '✓';
+
+      chart.update();
     });
 
   } catch (error) {
