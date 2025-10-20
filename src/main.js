@@ -80,14 +80,20 @@ async function loadData() {
         const totalCommits = repoDailyCount.reduce((a, b) => a + b, 0);
         if (totalCommits === 0) continue;
 
-        // Create dataset for grouped bar chart
+        // Create dataset for line chart
         datasets.push({
           label: repo.name,
           data: repoDailyCount,
-          backgroundColor: colors[i % colors.length],
+          backgroundColor: colors[i % colors.length] + '20', // Add transparency for fill
           borderColor: colors[i % colors.length],
-          borderWidth: 1,
-          borderRadius: 2,
+          borderWidth: 2,
+          pointBackgroundColor: colors[i % colors.length],
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: true,
+          tension: 0.3, // Smooth curves
         });
 
       } catch (error) {
@@ -105,18 +111,18 @@ async function loadData() {
       return;
     }
 
-    // Create bar chart
+    // Create line chart
     container.innerHTML = `
       <div class="chart-container">
         <h2>Daily Commit Activity (Last 30 Days)</h2>
-        <p class="chart-subtitle">Click legend items to toggle repositories</p>
+        <p class="chart-subtitle">Click legend items to toggle repositories | Line charts show activity trends over time</p>
         <div class="chart-wrapper">
           <canvas id="commitChart"></canvas>
         </div>
         <div class="chart-legend" id="chartLegend">
           ${datasets.map((dataset, index) => `
             <div class="legend-item active" data-index="${index}">
-              <span class="legend-color" style="background-color: ${dataset.backgroundColor}"></span>
+              <span class="legend-color" style="background-color: ${dataset.borderColor}"></span>
               <span class="legend-name">${dataset.label}</span>
               <span class="legend-toggle">✓</span>
             </div>
@@ -127,7 +133,7 @@ async function loadData() {
 
     const ctx = document.getElementById('commitChart').getContext('2d');
     const chart = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
         labels: labels,
         datasets: datasets
@@ -152,11 +158,11 @@ async function loadData() {
                 return tooltipItems[0].label;
               },
               label: (context) => {
-                return `${context.dataset.label}: ${context.parsed.y} commits`;
+                return `${context.dataset.label}: ${context.parsed.y} commit${context.parsed.y !== 1 ? 's' : ''}`;
               },
               afterBody: (tooltipItems) => {
                 const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
-                return `Total: ${total} commits`;
+                return `Total: ${total} commit${total !== 1 ? 's' : ''}`;
               }
             }
           }
@@ -188,7 +194,7 @@ async function loadData() {
               maxTicksLimit: 15,
             },
             grid: {
-              display: false
+              color: 'rgba(255, 255, 255, 0.05)'
             }
           }
         },
@@ -197,10 +203,9 @@ async function loadData() {
           axis: 'x',
           intersect: false
         },
-        datasets: {
-          bar: {
-            barPercentage: 0.8,
-            categoryPercentage: 0.8
+        elements: {
+          line: {
+            tension: 0.3 // Smooth lines
           }
         }
       }
