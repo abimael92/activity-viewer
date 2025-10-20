@@ -3,14 +3,27 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>GitHub Weekly Commits Graph</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Repository Activity</title>
+  <link rel="stylesheet" href="./src/styles.css">
 </head>
 
 <body>
-  <h2>GitHub Weekly Commits Graph</h2>
-  <label>GitHub Username: <input id="username" value="abimael92"></label><br>
-  <button id="loadButton">Load Graph</button>
-  <canvas id="commitChart" width="1000" height="400"></canvas>
+  <div id="app">
+    <header class="app-header">
+      <h1 class="app-title">GitHub Repository Activity</h1>
+      <div class="input-container">
+        <input type="text" id="username" class="username-input" value="abimael92" placeholder="Enter GitHub username">
+        <button id="loadButton" class="load-button">
+          Load Repository Activity
+        </button>
+      </div>
+    </header>
+
+    <main class="charts-container" id="chartsContainer">
+      <!-- Chart will be dynamically inserted here -->
+    </main>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
