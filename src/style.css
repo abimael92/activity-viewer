@@ -678,3 +678,107 @@ body {
         color: black;
     }
 }
+
+.inactive-repos {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.inactive-repos h3 {
+  margin: 0 0 1rem 0;
+  color: #ffffff;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inactive-repos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.repo-status-card {
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 4px solid;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.repo-status-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.repo-status-card.inactive {
+  border-left-color: #ffa726;
+}
+
+.repo-status-card.very-inactive {
+  border-left-color: #ff6b6b;
+}
+
+.repo-status-card.empty {
+  border-left-color: #78909c;
+}
+
+.repo-status-card.error {
+  border-left-color: #ec407a;
+}
+
+.repo-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.repo-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.inactive {
+  background: #ffa726;
+}
+
+.status-indicator.very-inactive {
+  background: #ff6b6b;
+}
+
+.status-indicator.empty {
+  background: #78909c;
+}
+
+.status-indicator.error {
+  background: #ec407a;
+}
+
+.repo-status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-reason {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+}
+
+.last-commit {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-family: monospace;
+}
