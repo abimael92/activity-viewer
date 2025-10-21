@@ -21,10 +21,15 @@
     <header class="app-header">
       <h1 class="app-title">Activity Viewer</h1>
       <div class="input-container">
-        <input type="text" id="username" class="username-input" value="abimael92" placeholder="Enter GitHub username">
-        <button id="loadButton" class="load-button">
-          Load Activity
-        </button>
+        <input type="text" id="username" class="username-input" placeholder="Enter GitHub username" value="abimael92" />
+        <select id="daysFilter" class="days-filter">
+          <option value="7">7 days</option>
+          <option value="14">14 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+        </select>
+        <button id="loadButton" class="load-button">Load Activity</button>
       </div>
     </header>
 
