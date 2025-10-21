@@ -1,49 +1,114 @@
 import Chart from "chart.js/auto";
 
-const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
-
 async function fetchWithAuth(url) {
-  return fetch(url, { headers: { Authorization: `token ${GITHUB_TOKEN}` } });
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'GitHub-Commit-Visualizer',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    // Handle rate limiting
+    if (response.status === 403 && response.headers.get('X-RateLimit-Remaining') === '0') {
+      const resetTime = response.headers.get('X-RateLimit-Reset');
+      const resetDate = new Date(resetTime * 1000);
+      throw new Error(`GitHub API rate limit exceeded. Resets at: ${resetDate.toLocaleTimeString()}`);
+    }
+
+    if (response.status === 404) {
+      throw new Error('User or repository not found');
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response;
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Please check your internet connection');
+    }
+    throw error;
+  }
 }
 
 async function loadData() {
-  const username = document.getElementById('username').value;
+  const username = document.getElementById('username').value.trim();
+  const daysFilter = document.getElementById('daysFilter').value;
   const container = document.getElementById('chartsContainer');
 
+  // Validate username
+  if (!username) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Please enter a GitHub username</h3>
+        <p>Enter a valid GitHub username to view commit activity.</p>
+      </div>`;
+    return;
+  }
+
   container.innerHTML = `
-        <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>Loading repository activity...</p>
-        </div>
-    `;
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading repository activity for ${username}...</p>
+    </div>
+  `;
 
   try {
+    // Test user existence first
+    const userRes = await fetchWithAuth(
+      `https://api.github.com/users/${username}`
+    );
+
+    if (!userRes.ok) {
+      throw new Error(`User "${username}" not found on GitHub`);
+    }
+
     const repoRes = await fetchWithAuth(
       `https://api.github.com/users/${username}/repos?sort=updated&per_page=10`
     );
 
-    if (!repoRes.ok) throw new Error(`Failed to fetch repositories: ${repoRes.status}`);
+    if (!repoRes.ok) {
+      const errorData = await repoRes.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch repositories: ${repoRes.status}`);
+    }
+
     const repos = await repoRes.json();
 
+    // Check if user has repositories
+    if (repos.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>No repositories found</h3>
+          <p>User "${username}" doesn't have any public repositories.</p>
+        </div>`;
+      return;
+    }
+
+    // Rest of your existing code continues here...
     const end = new Date();
     const start = new Date();
-    start.setDate(end.getDate() - 30);
+    start.setDate(end.getDate() - parseInt(daysFilter));
 
     // Calculate 21-day threshold date
     const twentyOneDaysAgo = new Date();
     twentyOneDaysAgo.setDate(end.getDate() - 21);
 
-    // Generate daily labels
+    // Generate daily labels and full dates
     const labels = [];
+    const fullDates = [];
     const dateMap = {};
     let currentDate = new Date(start);
     while (currentDate <= end) {
       const dateStr = currentDate.toISOString().split('T')[0];
       const label = currentDate.toLocaleDateString('en-US', {
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        weekday: 'short'
       });
       labels.push(label);
+      fullDates.push(dateStr);
       dateMap[dateStr] = labels.length - 1;
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -54,15 +119,23 @@ async function loadData() {
       '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
     ];
 
-    // Track repositories with no recent commits
+    // Track repositories with no recent commits and their inactivity periods
     const inactiveRepos = [];
+    // Track repository statistics
+    const repoStats = [];
 
     for (let i = 0; i < repos.length; i++) {
       const repo = repos[i];
-      let hasRecentCommits = false;
       let lastCommitDate = null;
 
+      // Initialize tracking variables for each repo
+      let maxCommits = 0;
+      let maxCommitsDate = null;
+      let totalCommits = 0;
+
       try {
+        console.log(`Fetching commits for: ${repo.name}`);
+
         const commitsRes = await fetchWithAuth(
           `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100`
         );
@@ -71,14 +144,22 @@ async function loadData() {
           inactiveRepos.push({
             name: repo.name,
             reason: commitsRes.status === 409 ? 'Empty repository' : 'Repository not found',
-            lastCommit: null
+            lastCommit: null,
+            daysWithoutCommits: 'N/A'
           });
           continue;
         }
-        if (!commitsRes.ok) continue;
+
+        if (!commitsRes.ok) {
+          console.warn(`Skipping repo ${repo.name}, status: ${commitsRes.status}`);
+          continue;
+        }
 
         const commits = await commitsRes.json();
-        if (!Array.isArray(commits)) continue;
+        if (!Array.isArray(commits)) {
+          console.warn(`No commits array for ${repo.name}`);
+          continue;
+        }
 
         // Initialize daily counts for this repo
         const repoDailyCount = new Array(labels.length).fill(0);
@@ -92,6 +173,13 @@ async function loadData() {
             const index = dateMap[date];
             if (index !== undefined) {
               repoDailyCount[index]++;
+              totalCommits++;
+
+              // Track max commits day
+              if (repoDailyCount[index] > maxCommits) {
+                maxCommits = repoDailyCount[index];
+                maxCommitsDate = date;
+              }
 
               // Check if this commit is within the last 21 days
               const commitDate = new Date(c.commit.author.date);
@@ -107,15 +195,33 @@ async function loadData() {
           }
         });
 
-        const totalCommits = repoDailyCount.reduce((a, b) => a + b, 0);
+        // Calculate days without commits
+        let daysWithoutCommits = 0;
+        if (lastCommitDate) {
+          const lastCommit = new Date(lastCommitDate);
+          const todayObj = new Date();
+          daysWithoutCommits = Math.floor((todayObj - lastCommit) / (1000 * 60 * 60 * 24));
+        }
 
         if (totalCommits === 0) {
           inactiveRepos.push({
             name: repo.name,
-            reason: 'No commits in last 30 days',
-            lastCommit: lastCommitDate
+            reason: 'No commits in selected period',
+            lastCommit: lastCommitDate,
+            daysWithoutCommits: daysWithoutCommits
           });
           continue;
+        }
+
+        // Add to repo stats
+        if (totalCommits > 0) {
+          repoStats.push({
+            name: repo.name,
+            maxCommits: maxCommits,
+            maxCommitsDate: maxCommitsDate,
+            totalCommits: totalCommits,
+            color: colors[i % colors.length]
+          });
         }
 
         // Check if repo has been inactive for 21+ days
@@ -123,32 +229,34 @@ async function loadData() {
           inactiveRepos.push({
             name: repo.name,
             reason: 'No commits in last 21 days',
-            lastCommit: lastCommitDate
+            lastCommit: lastCommitDate,
+            daysWithoutCommits: daysWithoutCommits
+          });
+        } else {
+          // Create dataset for line chart only for active repos
+          datasets.push({
+            label: repo.name,
+            data: repoDailyCount,
+            backgroundColor: colors[i % colors.length] + '20',
+            borderColor: colors[i % colors.length],
+            borderWidth: 2,
+            pointBackgroundColor: colors[i % colors.length],
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: true,
+            tension: 0.3,
           });
         }
-
-        // Create dataset for line chart
-        datasets.push({
-          label: repo.name,
-          data: repoDailyCount,
-          backgroundColor: colors[i % colors.length] + '20',
-          borderColor: colors[i % colors.length],
-          borderWidth: 2,
-          pointBackgroundColor: colors[i % colors.length],
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 1,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          fill: true,
-          tension: 0.3,
-        });
 
       } catch (error) {
         console.warn(`Error processing repo ${repo.name}:`, error);
         inactiveRepos.push({
           name: repo.name,
-          reason: 'Error fetching data',
-          lastCommit: null
+          reason: 'Error fetching data: ' + error.message,
+          lastCommit: null,
+          daysWithoutCommits: 'N/A'
         });
         continue;
       }
@@ -160,14 +268,15 @@ async function loadData() {
     if (datasets.length === 0) {
       htmlContent = `
         <div class="empty-state">
-          <h3>No commit data found</h3>
-          <p>No commit data available for repositories</p>
+          <h3>No commit activity found</h3>
+          <p>No commit data available for ${username}'s repositories in the last ${daysFilter} days.</p>
+          ${inactiveRepos.length > 0 ? `<p>Found ${inactiveRepos.length} repositories with no recent activity.</p>` : ''}
         </div>`;
     } else {
       htmlContent = `
         <div class="chart-container">
-          <h2>Daily Commit Activity (Last 30 Days)</h2>
-          <p class="chart-subtitle">Click legend items to toggle repositories | Line charts show activity trends over time</p>
+          <h2>${username}'s Daily Commit Activity (Last ${daysFilter} Days)</h2>
+          <p class="chart-subtitle">Click legend items to toggle repositories</p>
           <div class="chart-wrapper">
             <canvas id="commitChart"></canvas>
           </div>
@@ -183,17 +292,53 @@ async function loadData() {
         </div>`;
     }
 
+    // Add repo stats section
+    if (repoStats.length > 0) {
+      htmlContent += `
+        <div class="repo-stats">
+          <h3>Repository Statistics</h3>
+          <div class="stats-grid">
+            ${repoStats.map(stat => `
+              <div class="stat-card">
+                <div class="repo-stat-header">
+                  <span class="repo-name" style="color: ${stat.color}">${stat.name}</span>
+                  <span class="max-commits-badge">${stat.maxCommits} commits</span>
+                </div>
+                <div class="stat-details">
+                  <span class="peak-day">Peak: ${formatDate(stat.maxCommitsDate)}</span>
+                  <span class="total-commits">Total: ${stat.totalCommits} commits</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+
     // Add inactive repositories section if there are any
     if (inactiveRepos.length > 0) {
+      // Sort by days without commits (descending)
+      inactiveRepos.sort((a, b) => {
+        if (a.daysWithoutCommits === 'N/A') return 1;
+        if (b.daysWithoutCommits === 'N/A') return -1;
+        return b.daysWithoutCommits - a.daysWithoutCommits;
+      });
+
       htmlContent += `
         <div class="inactive-repos">
-          <h3>📊 Repository Activity Status</h3>
+          <h3>Inactive Repositories</h3>
           <div class="inactive-repos-grid">
             ${inactiveRepos.map(repo => `
               <div class="repo-status-card ${getStatusClass(repo.reason)}">
                 <div class="repo-status-header">
                   <span class="repo-name">${repo.name}</span>
-                  <span class="status-indicator ${getStatusClass(repo.reason)}"></span>
+                  <div class="status-info">
+                    ${repo.daysWithoutCommits !== 'N/A' ? `
+                      <span class="days-counter ${getDaysCounterClass(repo.daysWithoutCommits)}">
+                        ${repo.daysWithoutCommits} day${repo.daysWithoutCommits !== 1 ? 's' : ''}
+                      </span>
+                    ` : ''}
+                    <span class="status-indicator ${getStatusClass(repo.reason)}"></span>
+                  </div>
                 </div>
                 <div class="repo-status-details">
                   <span class="status-reason">${repo.reason}</span>
@@ -235,13 +380,27 @@ async function loadData() {
               displayColors: true,
               callbacks: {
                 title: (tooltipItems) => {
-                  return tooltipItems[0].label;
+                  const index = tooltipItems[0].dataIndex;
+                  const date = new Date(fullDates[index]);
+                  return date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  });
                 },
                 label: (context) => {
-                  return `${context.dataset.label}: ${context.parsed.y} commit${context.parsed.y !== 1 ? 's' : ''}`;
+                  const value = context.parsed.y;
+                  if (value === 0) {
+                    return null;
+                  }
+                  return `${context.dataset.label}: ${value} commit${value !== 1 ? 's' : ''}`;
                 },
                 afterBody: (tooltipItems) => {
                   const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                  if (total === 0) {
+                    return 'No commits on this day';
+                  }
                   return `Total: ${total} commit${total !== 1 ? 's' : ''}`;
                 }
               }
@@ -271,7 +430,7 @@ async function loadData() {
               },
               ticks: {
                 color: 'rgba(255, 255, 255, 0.7)',
-                maxTicksLimit: 15,
+                maxTicksLimit: 5,
               },
               grid: {
                 color: 'rgba(255, 255, 255, 0.05)'
@@ -292,20 +451,26 @@ async function loadData() {
       });
 
       // Add legend click handler after chart creation
-      document.getElementById('chartLegend').addEventListener('click', (e) => {
-        const legendItem = e.target.closest('.legend-item');
-        if (!legendItem) return;
+      const chartLegend = document.getElementById('chartLegend');
+      if (chartLegend) {
+        chartLegend.addEventListener('click', (e) => {
+          const legendItem = e.target.closest('.legend-item');
+          if (!legendItem) return;
 
-        const datasetIndex = parseInt(legendItem.dataset.index);
-        const meta = chart.getDatasetMeta(datasetIndex);
+          const datasetIndex = parseInt(legendItem.dataset.index);
+          const meta = chart.getDatasetMeta(datasetIndex);
 
-        // Toggle visibility
-        meta.hidden = !meta.hidden;
-        legendItem.classList.toggle('inactive');
-        legendItem.querySelector('.legend-toggle').textContent = meta.hidden ? '✕' : '✓';
+          // Toggle visibility
+          meta.hidden = !meta.hidden;
+          legendItem.classList.toggle('inactive');
+          const toggle = legendItem.querySelector('.legend-toggle');
+          if (toggle) {
+            toggle.textContent = meta.hidden ? '✕' : '✓';
+          }
 
-        chart.update();
-      });
+          chart.update();
+        });
+      }
     }
 
   } catch (error) {
@@ -315,6 +480,11 @@ async function loadData() {
         <h3>Error loading data</h3>
         <p>${error.message}</p>
         <p>Please check the username and try again.</p>
+        <details style="margin-top: 1rem; text-align: left;">
+          <summary>Technical Details</summary>
+          <small>Error: ${error.message}<br>
+          This could be due to: GitHub API limits, network issues, or invalid username.</small>
+        </details>
       </div>`;
   }
 }
@@ -322,12 +492,20 @@ async function loadData() {
 // Helper functions
 function getStatusClass(reason) {
   if (reason.includes('21 days')) return 'inactive';
-  if (reason.includes('30 days')) return 'very-inactive';
   if (reason.includes('Empty') || reason.includes('not found')) return 'empty';
-  return 'error';
+  if (reason.includes('Error')) return 'error';
+  return 'very-inactive';
+}
+
+function getDaysCounterClass(days) {
+  if (days <= 7) return 'recent';
+  if (days <= 21) return 'moderate';
+  if (days <= 60) return 'inactive';
+  return 'very-inactive';
 }
 
 function formatDate(date) {
+  if (!date) return 'N/A';
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -337,6 +515,18 @@ function formatDate(date) {
 
 document.addEventListener('DOMContentLoaded', () => {
   const loadButton = document.getElementById('loadButton');
-  if (loadButton) loadButton.addEventListener('click', loadData);
-  setTimeout(loadData, 1000);
+  const usernameInput = document.getElementById('username');
+
+  if (loadButton) {
+    loadButton.addEventListener('click', loadData);
+  }
+
+  if (usernameInput) {
+    usernameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        loadData();
+      }
+    });
+  }
 });
+setTimeout(loadData, 1000);
