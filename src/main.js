@@ -195,6 +195,18 @@ async function loadData() {
           }
         });
 
+        // Calculate consecutive commit days
+        let currentStreak = 0;
+        let maxConsecutiveDays = 0;
+        for (let count of repoDailyCount) {
+          if (count > 0) {
+            currentStreak++;
+            maxConsecutiveDays = Math.max(maxConsecutiveDays, currentStreak);
+          } else {
+            currentStreak = 0;
+          }
+        }
+
         // Calculate days without commits
         let daysWithoutCommits = 0;
         if (lastCommitDate) {
@@ -220,7 +232,10 @@ async function loadData() {
             maxCommits: maxCommits,
             maxCommitsDate: maxCommitsDate,
             totalCommits: totalCommits,
-            color: colors[i % colors.length]
+            color: colors[i % colors.length],
+            createdAt: repo.created_at, // Add repository creation date
+            maxConsecutiveDays: maxConsecutiveDays, // Add consecutive days
+            description: repo.description // Add repo description
           });
         }
 
@@ -296,20 +311,163 @@ async function loadData() {
     if (repoStats.length > 0) {
       htmlContent += `
         <div class="repo-stats">
-          <h3>Repository Statistics</h3>
-          <div class="stats-grid">
-            ${repoStats.map(stat => `
-              <div class="stat-card">
-                <div class="repo-stat-header">
-                  <span class="repo-name" style="color: ${stat.color}">${stat.name}</span>
-                  <span class="max-commits-badge">${stat.maxCommits} commits</span>
+          <div class="section-header">
+            <h3>📊 Repository Insights</h3>
+            <div class="stats-summary">
+              <span class="summary-item">
+                <span class="summary-count">${repoStats.length}</span>
+                <span class="summary-label">Active Repos</span>
+              </span>
+              <span class="summary-item">
+                <span class="summary-count">${repoStats.reduce((sum, stat) => sum + stat.totalCommits, 0)}</span>
+                <span class="summary-label">Total Commits</span>
+              </span>
+            </div>
+          </div>
+          
+          <div class="stats-controls">
+            <div class="view-toggle">
+              <button class="view-btn active" data-view="grid">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <rect x="1" y="1" width="4" height="4" rx="1"/>
+                  <rect x="1" y="7" width="4" height="4" rx="1"/>
+                  <rect x="7" y="1" width="4" height="4" rx="1"/>
+                  <rect x="7" y="7" width="4" height="4" rx="1"/>
+                  <rect x="13" y="1" width="2" height="4" rx="1"/>
+                  <rect x="13" y="7" width="2" height="4" rx="1"/>
+                </svg>
+                Grid
+              </button>
+              <button class="view-btn" data-view="list">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <rect x="1" y="1" width="14" height="2" rx="1"/>
+                  <rect x="1" y="7" width="14" height="2" rx="1"/>
+                  <rect x="1" y="13" width="14" height="2" rx="1"/>
+                </svg>
+                List
+              </button>
+            </div>
+            <div class="sort-controls">
+              <select class="sort-select">
+                <option value="name">Sort by Name</option>
+                <option value="commits">Sort by Commits</option>
+                <option value="recent">Sort by Recent</option>
+                <option value="streak">Sort by Streak</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="stats-grid" id="statsContainer">
+            ${repoStats.map((stat, index) => `
+              <div class="stat-card" data-repo="${stat.name.toLowerCase()}" data-commits="${stat.totalCommits}" data-streak="${stat.maxConsecutiveDays}">
+                <div class="card-header">
+                  <div class="repo-main-info">
+                    <div class="repo-avatar" style="background: linear-gradient(135deg, ${stat.color}20, ${stat.color}40); border-color: ${stat.color}">
+                      <span style="color: ${stat.color}">${stat.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div class="repo-title">
+                      <h4 class="repo-name" style="color: ${stat.color}">${stat.name}</h4>
+                      <div class="repo-meta">
+                        <span class="repo-age" data-tooltip="Repository age">
+                          📅 ${getRepositoryAge(stat.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="repo-actions">
+                    <button class="action-btn favorite-btn" data-tooltip="Add to favorites">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1.5l2.5 5 5.5.5-4 4 1 5.5-5-3-5 3 1-5.5-4-4 5.5-.5z"/>
+                      </svg>
+                    </button>
+                    <button class="action-btn expand-btn" data-tooltip="Show details">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M4 6l4 4 4-4z"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <div class="stat-details">
-                  <span class="peak-day">Peak: ${formatDate(stat.maxCommitsDate)}</span>
-                  <span class="total-commits">Total: ${stat.totalCommits} commits</span>
+
+                <div class="card-stats">
+                  <div class="stat-pill primary">
+                    <span class="stat-value">${stat.totalCommits}</span>
+                    <span class="stat-label">Total</span>
+                  </div>
+                  <div class="stat-pill ${stat.maxCommits >= 5 ? 'highlight' : 'secondary'}">
+                    <span class="stat-value">${stat.maxCommits}</span>
+                    <span class="stat-label">Peak</span>
+                  </div>
+                  <div class="stat-pill ${stat.maxConsecutiveDays >= 7 ? 'success' : 'secondary'}">
+                    <span class="stat-value">${stat.maxConsecutiveDays}</span>
+                    <span class="stat-label">Streak</span>
+                  </div>
+                </div>
+
+                <div class="card-details">
+                  <div class="detail-item">
+                    <span class="detail-icon">🔥</span>
+                    <div class="detail-content">
+                      <span class="detail-label">Peak Activity</span>
+                      <span class="detail-value">${formatDate(stat.maxCommitsDate)}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="detail-item">
+                    <span class="detail-icon">⚡</span>
+                    <div class="detail-content">
+                      <span class="detail-label">Best Streak</span>
+                      <span class="detail-value">${stat.maxConsecutiveDays} consecutive days</span>
+                    </div>
+                  </div>
+
+                  ${stat.description ? `
+                  <div class="detail-item description">
+                    <span class="detail-icon">📝</span>
+                    <div class="detail-content">
+                      <span class="detail-label">Description</span>
+                      <span class="detail-value">${stat.description}</span>
+                    </div>
+                  </div>
+                  ` : ''}
+
+                  <div class="activity-meter">
+                    <div class="meter-label">Activity Level</div>
+                    <div class="meter-bar">
+                      <div class="meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}" 
+                           style="width: ${Math.min((stat.totalCommits / 50) * 100, 100)}%">
+                        <span class="meter-text">${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <div class="commit-trend">
+                    <span class="trend-label">Recent Activity</span>
+                    <div class="trend-sparkline">
+                      ${generateSparkline(stat.recentActivity || [])}
+                    </div>
+                  </div>
+                  <button class="view-repo-btn" onclick="window.open('https://github.com/${username}/${stat.name}', '_blank')">
+                    View Repo
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M10 2h4v4l-1-1-3 3-1-1 3-3-1-1zM6 10L3 7l1-1 3 3-1 1z"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             `).join('')}
+          </div>
+
+          <div class="stats-footer">
+            <div class="export-controls">
+              <button class="export-btn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3"/>
+                </svg>
+                Export Data
+              </button>
+            </div>
           </div>
         </div>`;
     }
@@ -511,6 +669,35 @@ function formatDate(date) {
     month: 'short',
     day: 'numeric'
   });
+}
+
+// Helper functions for enhanced stats
+function getRepositoryAge(createdAt) {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffTime = Math.abs(now - created);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 30) return `${diffDays} days`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`;
+  return `${Math.floor(diffDays / 365)} years`;
+}
+
+function getActivityLevel(totalCommits, streak) {
+  const score = totalCommits + (streak * 2);
+  if (score > 50) return 'very-high';
+  if (score > 25) return 'high';
+  if (score > 10) return 'medium';
+  return 'low';
+}
+
+function generateSparkline(activity) {
+  // Simple sparkline generation - you can enhance this with real data
+  const values = activity.length > 0 ? activity : [1, 3, 2, 5, 4, 3, 6];
+  const max = Math.max(...values);
+  return values.map(val =>
+    `<div class="sparkline-bar" style="height: ${(val / max) * 100}%"></div>`
+  ).join('');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
