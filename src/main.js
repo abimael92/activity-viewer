@@ -76,7 +76,213 @@ function setCachedData(key, data) {
   }
 }
 
-// Main data loading function
+// Separate function to load inactivity data (ALWAYS checks 30 days)
+async function loadInactivityData(username) {
+  const cacheKey = `${username}_inactivity`;
+  const cachedData = getCachedData(cacheKey);
+  if (cachedData) return cachedData;
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const twentyOneDaysAgo = new Date();
+  twentyOneDaysAgo.setDate(twentyOneDaysAgo.getDate() - 21);
+
+  const fifteenDaysAgo = new Date();
+  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+
+  try {
+    const repoRes = await fetchWithAuth(
+      `https://api.github.com/users/${username}/repos?sort=updated&per_page=100`
+    );
+
+    if (!repoRes.ok) return { inactiveRepos: [], repos15Days: [] };
+
+    const repos = await repoRes.json();
+    const inactiveRepos = [];
+    const repos15Days = [];
+
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    for (const repo of repos) {
+      try {
+        const commitsRes = await fetchWithAuth(
+          `https://api.github.com/repos/${username}/${repo.name}/commits?since=${thirtyDaysAgo.toISOString()}&per_page=100`
+        );
+
+        if (commitsRes.status === 409 || commitsRes.status === 404) {
+          inactiveRepos.push({
+            name: repo.name,
+            reason: commitsRes.status === 409 ? 'Empty repository' : 'Repository not found',
+            lastCommit: null,
+            daysWithoutCommits: 'N/A'
+          });
+          continue;
+        }
+
+        if (!commitsRes.ok) continue;
+
+        const commits = await commitsRes.json();
+        let lastCommitDate = null;
+        let hasCommitsInLast21Days = false;
+        let hasCommitsInLast15Days = false;
+
+        if (Array.isArray(commits)) {
+          commits.forEach(c => {
+            if (c.commit?.author?.date) {
+              const commitDate = new Date(c.commit.author.date);
+
+              if (commitDate >= twentyOneDaysAgo) hasCommitsInLast21Days = true;
+              if (commitDate >= fifteenDaysAgo) hasCommitsInLast15Days = true;
+
+              if (!lastCommitDate || commitDate > lastCommitDate) {
+                lastCommitDate = commitDate;
+              }
+            }
+          });
+        }
+
+        let daysWithoutCommits = 0;
+        if (lastCommitDate) {
+          const today = new Date();
+          daysWithoutCommits = Math.floor((today - lastCommitDate) / (1000 * 60 * 60 * 24));
+        }
+
+        if (!hasCommitsInLast21Days && lastCommitDate) {
+          inactiveRepos.push({
+            name: repo.name,
+            reason: 'No commits in last 21 days',
+            lastCommit: lastCommitDate,
+            daysWithoutCommits: daysWithoutCommits
+          });
+        } else if (!hasCommitsInLast15Days && hasCommitsInLast21Days && lastCommitDate) {
+          repos15Days.push({
+            name: repo.name,
+            reason: 'No commits in last 15 days (but active in last 21 days)',
+            lastCommit: lastCommitDate,
+            daysWithoutCommits: daysWithoutCommits
+          });
+        }
+
+        await delay(300);
+      } catch (error) {
+        // Skip errors for inactivity detection
+        continue;
+      }
+    }
+
+    const inactivityData = { inactiveRepos, repos15Days };
+    setCachedData(cacheKey, inactivityData);
+    return inactivityData;
+  } catch (error) {
+    return { inactiveRepos: [], repos15Days: [] };
+  }
+}
+
+// Load inactivity sections independently
+async function loadInactivitySections() {
+  const username = document.getElementById('username').value.trim();
+  if (!username) return;
+
+  try {
+    const inactivityData = await loadInactivityData(username);
+    renderInactivitySections(inactivityData, username);
+  } catch (error) {
+    console.error('Error loading inactivity sections:', error);
+  }
+}
+
+// Render only the inactivity sections
+function renderInactivitySections(inactivityData, username) {
+  const { inactiveRepos, repos15Days } = inactivityData;
+
+  let htmlContent = '';
+
+  // Add inactive repositories section if there are any
+  if (inactiveRepos.length > 0) {
+    // Sort by days without commits (descending)
+    inactiveRepos.sort((a, b) => {
+      if (a.daysWithoutCommits === 'N/A') return 1;
+      if (b.daysWithoutCommits === 'N/A') return -1;
+      return b.daysWithoutCommits - a.daysWithoutCommits;
+    });
+
+    htmlContent += `
+      <div class="inactive-repos">
+        <h3>Inactive Repositories</h3>
+        <div class="inactive-repos-grid">
+          ${inactiveRepos.map(repo => `
+            <div class="repo-status-card ${getStatusClass(repo.reason)}">
+              <div class="repo-status-header">
+                <span class="repo-name">${repo.name}</span>
+                <div class="status-info">
+                  ${repo.daysWithoutCommits !== 'N/A' ? `
+                    <span class="days-counter ${getDaysCounterClass(repo.daysWithoutCommits)}">
+                      ${repo.daysWithoutCommits} day${repo.daysWithoutCommits !== 1 ? 's' : ''}
+                    </span>
+                  ` : ''}
+                  <span class="status-indicator ${getStatusClass(repo.reason)}"></span>
+                </div>
+              </div>
+              <div class="repo-status-details">
+                <span class="status-reason">${repo.reason}</span>
+                ${repo.lastCommit ? `
+                  <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Add 15-day inactive repositories section if there are any
+  if (repos15Days.length > 0) {
+    // Sort by days without commits (descending)
+    repos15Days.sort((a, b) => {
+      if (a.daysWithoutCommits === 'N/A') return 1;
+      if (b.daysWithoutCommits === 'N/A') return -1;
+      return b.daysWithoutCommits - a.daysWithoutCommits;
+    });
+
+    htmlContent += `
+      <div class="inactive-repos">
+        <h3>Recently Inactive Repositories (15+ Days)</h3>
+        <p class="section-subtitle">Repositories with no commits in the last 15 days but had activity in the last 21 days</p>
+        <div class="inactive-repos-grid">
+          ${repos15Days.map(repo => `
+            <div class="repo-status-card warning">
+              <div class="repo-status-header">
+                <span class="repo-name">${repo.name}</span>
+                <div class="status-info">
+                  ${repo.daysWithoutCommits !== 'N/A' ? `
+                    <span class="days-counter warning">
+                      ${repo.daysWithoutCommits} day${repo.daysWithoutCommits !== 1 ? 's' : ''}
+                    </span>
+                  ` : ''}
+                  <span class="status-indicator warning"></span>
+                </div>
+              </div>
+              <div class="repo-status-details">
+                <span class="status-reason">${repo.reason}</span>
+                ${repo.lastCommit ? `
+                  <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Update only the inactivity sections container
+  const inactivityContainer = document.getElementById('inactivitySections');
+  if (inactivityContainer) {
+    inactivityContainer.innerHTML = htmlContent;
+  }
+}
+
+// Main data loading function - only for graph and stats
 async function loadData() {
   const username = document.getElementById('username').value.trim();
   const daysFilter = document.getElementById('daysFilter').value;
@@ -114,6 +320,7 @@ async function loadData() {
     // Check cache first
     const cacheKey = `${username}_${daysFilter}`;
     const cachedData = getCachedData(cacheKey);
+
     if (cachedData) {
       renderData(cachedData, username, daysFilter);
       container.classList.remove('loading');
@@ -155,14 +362,6 @@ async function loadData() {
     const start = new Date();
     start.setDate(end.getDate() - parseInt(daysFilter));
 
-    // Calculate 21-day threshold date
-    const twentyOneDaysAgo = new Date();
-    twentyOneDaysAgo.setDate(twentyOneDaysAgo.getDate() - 21);
-
-    const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
-
     // Generate daily labels and full dates
     const labels = [];
     const fullDates = [];
@@ -187,10 +386,7 @@ async function loadData() {
       '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
     ];
 
-    // Track repositories with no recent commits and their inactivity periods
-    const inactiveRepos = [];
-    const repos15Days = [];   // 15-20 days inactive
-    // Track repository statistics
+    // Track repository statistics (for graph only)
     const repoStats = [];
 
     for (let i = 0; i < repos.length; i++) {
@@ -205,17 +401,13 @@ async function loadData() {
       try {
         console.log(`Fetching commits for: ${repo.name}`);
 
+        // Fetch commits ONLY for the selected graph date range
         const commitsRes = await fetchWithAuth(
           `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100`
         );
 
         if (commitsRes.status === 409 || commitsRes.status === 404) {
-          inactiveRepos.push({
-            name: repo.name,
-            reason: commitsRes.status === 409 ? 'Empty repository' : 'Repository not found',
-            lastCommit: null,
-            daysWithoutCommits: 'N/A'
-          });
+          // These are handled by inactivity data
           continue;
         }
 
@@ -233,13 +425,8 @@ async function loadData() {
         // Initialize daily counts for this repo
         const repoDailyCount = new Array(labels.length).fill(0);
 
-        // Track if repo has commits in last 21 days
-        let hasCommitsInLast21Days = false;
-        let hasCommitsInLast15Days = false;
-
         commits.forEach(c => {
           if (c.commit?.author?.date) {
-
             // Get commit timestamp
             const commitDateUTC = new Date(c.commit.author.date);
 
@@ -260,19 +447,9 @@ async function loadData() {
                 maxCommitsDate = dateStr;
               }
 
-              // Check if this commit is within the last 21 days
-              const commitDate = new Date(c.commit.author.date);
-              if (commitDate >= twentyOneDaysAgo) {
-                hasCommitsInLast21Days = true;
-              }
-
-              if (commitDate >= fifteenDaysAgo) {
-                hasCommitsInLast15Days = true;
-              }
-
-              // Track last commit date
-              if (!lastCommitDate || commitDate > lastCommitDate) {
-                lastCommitDate = commitDate;
+              // Track last commit date for this period only
+              if (!lastCommitDate || commitDateUTC > lastCommitDate) {
+                lastCommitDate = commitDateUTC;
               }
             }
           }
@@ -290,25 +467,7 @@ async function loadData() {
           }
         }
 
-        // Calculate days without commits
-        let daysWithoutCommits = 0;
-        if (lastCommitDate) {
-          const lastCommit = new Date(lastCommitDate);
-          const todayObj = new Date();
-          daysWithoutCommits = Math.floor((todayObj - lastCommit) / (1000 * 60 * 60 * 24));
-        }
-
-        if (totalCommits === 0) {
-          inactiveRepos.push({
-            name: repo.name,
-            reason: 'No commits in selected period',
-            lastCommit: lastCommitDate,
-            daysWithoutCommits: daysWithoutCommits
-          });
-          continue;
-        }
-
-        // Add to repo stats
+        // Add to repo stats if we have commits in selected period
         if (totalCommits > 0) {
           repoStats.push({
             name: repo.name,
@@ -320,26 +479,7 @@ async function loadData() {
             maxConsecutiveDays: maxConsecutiveDays,
             description: repo.description
           });
-        }
 
-        // Check if repo has been inactive for 21+ days
-        if (!hasCommitsInLast21Days && lastCommitDate) {
-          inactiveRepos.push({
-            name: repo.name,
-            reason: 'No commits in last 21 days',
-            lastCommit: lastCommitDate,
-            daysWithoutCommits: daysWithoutCommits
-          });
-        }
-        // Check if repo has been inactive for 15-20 days (but has commits in last 21 days)
-        else if (!hasCommitsInLast15Days && hasCommitsInLast21Days && lastCommitDate) {
-          repos15Days.push({
-            name: repo.name,
-            reason: 'No commits in last 15 days (but active in last 21 days)',
-            lastCommit: lastCommitDate,
-            daysWithoutCommits: daysWithoutCommits
-          });
-        } else {
           // Create dataset for line chart only for active repos
           datasets.push({
             label: repo.name,
@@ -362,22 +502,14 @@ async function loadData() {
 
       } catch (error) {
         console.warn(`Error processing repo ${repo.name}:`, error);
-        inactiveRepos.push({
-          name: repo.name,
-          reason: 'Error fetching data: ' + error.message,
-          lastCommit: null,
-          daysWithoutCommits: 'N/A'
-        });
         continue;
       }
     }
 
-    // Prepare data for caching and rendering
+    // Prepare data for caching and rendering (GRAPH ONLY - no inactivity data)
     const dataToCache = {
       datasets,
       repoStats,
-      inactiveRepos,
-      repos15Days,
       labels,
       fullDates
     };
@@ -385,7 +517,7 @@ async function loadData() {
     // Cache the results
     setCachedData(cacheKey, dataToCache);
 
-    // Render the data
+    // Render the data (GRAPH ONLY)
     renderData(dataToCache, username, daysFilter);
 
   } catch (error) {
@@ -406,12 +538,12 @@ async function loadData() {
   }
 }
 
-// Separate rendering function
+// Separate rendering function (GRAPH ONLY - no inactivity sections)
 function renderData(data, username, daysFilter) {
-  const { datasets, repoStats, inactiveRepos, repos15Days, labels, fullDates } = data;
+  const { datasets, repoStats, labels, fullDates } = data;
   const container = document.getElementById('chartsContainer');
 
-  // Build the HTML content
+  // Build the HTML content (GRAPH AND STATS ONLY)
   let htmlContent = '';
 
   if (datasets.length === 0) {
@@ -419,7 +551,6 @@ function renderData(data, username, daysFilter) {
       <div class="empty-state">
         <h3>No commit activity found</h3>
         <p>No commit data available for ${username}'s repositories in the last ${daysFilter} days.</p>
-        ${inactiveRepos.length > 0 ? `<p>Found ${inactiveRepos.length} repositories with no recent activity.</p>` : ''}
       </div>`;
   } else {
     htmlContent = `
@@ -441,7 +572,7 @@ function renderData(data, username, daysFilter) {
       </div>`;
   }
 
-  // Add repo stats section
+  // Add repo stats section only
   if (repoStats.length > 0) {
     htmlContent += `
       <div class="repo-stats">
@@ -603,85 +734,6 @@ function renderData(data, username, daysFilter) {
       </div>`;
   }
 
-  // Add inactive repositories section if there are any
-  if (inactiveRepos.length > 0) {
-    // Sort by days without commits (descending)
-    inactiveRepos.sort((a, b) => {
-      if (a.daysWithoutCommits === 'N/A') return 1;
-      if (b.daysWithoutCommits === 'N/A') return -1;
-      return b.daysWithoutCommits - a.daysWithoutCommits;
-    });
-
-    htmlContent += `
-      <div class="inactive-repos">
-        <h3>Inactive Repositories</h3>
-        <div class="inactive-repos-grid">
-          ${inactiveRepos.map(repo => `
-            <div class="repo-status-card ${getStatusClass(repo.reason)}">
-              <div class="repo-status-header">
-                <span class="repo-name">${repo.name}</span>
-                <div class="status-info">
-                  ${repo.daysWithoutCommits !== 'N/A' ? `
-                    <span class="days-counter ${getDaysCounterClass(repo.daysWithoutCommits)}">
-                      ${repo.daysWithoutCommits} day${repo.daysWithoutCommits !== 1 ? 's' : ''}
-                    </span>
-                  ` : ''}
-                  <span class="status-indicator ${getStatusClass(repo.reason)}"></span>
-                </div>
-              </div>
-              <div class="repo-status-details">
-                <span class="status-reason">${repo.reason}</span>
-                ${repo.lastCommit ? `
-                  <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
-                ` : ''}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
-  }
-
-  // container.innerHTML = htmlContent;
-
-  // Add 15-day inactive repositories section if there are any
-  if (repos15Days.length > 0) {
-    // Sort by days without commits (descending)
-    repos15Days.sort((a, b) => {
-      if (a.daysWithoutCommits === 'N/A') return 1;
-      if (b.daysWithoutCommits === 'N/A') return -1;
-      return b.daysWithoutCommits - a.daysWithoutCommits;
-    });
-
-    htmlContent += `
-  <div class="inactive-repos">
-    <h3>Recently Inactive Repositories (15+ Days)</h3>
-    <p class="section-subtitle">Repositories with no commits in the last 15 days but had activity in the last 21 days</p>
-    <div class="inactive-repos-grid">
-      ${repos15Days.map(repo => `
-        <div class="repo-status-card warning">
-          <div class="repo-status-header">
-            <span class="repo-name">${repo.name}</span>
-            <div class="status-info">
-              ${repo.daysWithoutCommits !== 'N/A' ? `
-                <span class="days-counter warning">
-                  ${repo.daysWithoutCommits} day${repo.daysWithoutCommits !== 1 ? 's' : ''}
-                </span>
-              ` : ''}
-              <span class="status-indicator warning"></span>
-            </div>
-          </div>
-          <div class="repo-status-details">
-            <span class="status-reason">${repo.reason}</span>
-            ${repo.lastCommit ? `
-              <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
-            ` : ''}
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  </div>`;
-  }
-
   // Set the HTML content only ONCE at the end
   container.innerHTML = htmlContent;
 
@@ -806,7 +858,7 @@ function renderData(data, username, daysFilter) {
   }
 }
 
-// Helper functions
+// Helper functions (keep all your existing helper functions exactly the same)
 function getStatusClass(reason) {
   if (reason.includes('15 days')) return 'warning';
   if (reason.includes('21 days')) return 'inactive';
@@ -891,6 +943,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
       }
     });
+
+    // Load inactivity sections when page loads
+    setTimeout(() => loadInactivitySections(), 1000);
   }
 });
 
