@@ -89,6 +89,28 @@ body {
     transform: translateY(0);
 }
 
+.days-filter {
+    padding: 0.75rem 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.days-filter:focus {
+    outline: none;
+    border-color: #646cff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.days-filter option {
+    background: #1a1a2e;
+    color: #ffffff;
+}
+
 /* Chart Container */
 .chart-container {
     background: rgba(255, 255, 255, 0.05);
@@ -129,7 +151,7 @@ body {
 }
 
 .chart-scroll-container {
-    min-width: 1400px; /* Wide enough to show ~7 days comfortably */
+    min-width: 1400px;
     height: 400px;
     position: relative;
 }
@@ -295,278 +317,6 @@ body {
     margin-bottom: 0.5rem;
 }
 
-/* Inactive repos styles */
-.inactive-repos {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.inactive-repos h3 {
-    margin: 0 0 1rem 0;
-    color: #ffffff;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.inactive-repos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1rem;
-}
-
-.repo-status-card {
-    padding: 1rem;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border-left: 4px solid;
-    transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.repo-status-card:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.repo-status-card.inactive {
-    border-left-color: #ffa726;
-}
-
-.repo-status-card.very-inactive {
-    border-left-color: #ff6b6b;
-}
-
-.repo-status-card.empty {
-    border-left-color: #78909c;
-}
-
-.repo-status-card.error {
-    border-left-color: #ec407a;
-}
-
-.repo-status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-    gap: 0.5rem;
-}
-
-.repo-name {
-    font-weight: 600;
-    color: #ffffff;
-    font-size: 0.95rem;
-    flex: 1;
-}
-
-.status-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-.days-counter {
-    padding: 0.2rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.days-counter.recent {
-    background: rgba(76, 175, 80, 0.2);
-    color: #4caf50;
-    border: 1px solid rgba(76, 175, 80, 0.3);
-}
-
-.days-counter.moderate {
-    background: rgba(255, 167, 38, 0.2);
-    color: #ffa726;
-    border: 1px solid rgba(255, 167, 38, 0.3);
-}
-
-.days-counter.inactive {
-    background: rgba(255, 107, 107, 0.2);
-    color: #ff6b6b;
-    border: 1px solid rgba(255, 107, 107, 0.3);
-}
-
-.days-counter.very-inactive {
-    background: rgba(189, 68, 68, 0.2);
-    color: #bd4444;
-    border: 1px solid rgba(189, 68, 68, 0.3);
-}
-
-.status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.status-indicator.inactive {
-    background: #ffa726;
-}
-
-.status-indicator.very-inactive {
-    background: #ff6b6b;
-}
-
-.status-indicator.empty {
-    background: #78909c;
-}
-
-.status-indicator.error {
-    background: #ec407a;
-}
-
-.repo-status-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.status-reason {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.85rem;
-}
-
-.last-commit {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.8rem;
-    font-family: monospace;
-}
-
-/* Enhanced scrollbar styling */
-.chart-wrapper-scrollable::-webkit-scrollbar {
-    height: 12px;
-}
-
-.chart-wrapper-scrollable::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    margin: 0 1rem;
-}
-
-.chart-wrapper-scrollable::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #646cff, #00d4aa);
-    border-radius: 6px;
-    border: 2px solid rgba(0, 0, 0, 0.2);
-}
-
-.chart-wrapper-scrollable::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #747bff, #00e6b8);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    #app {
-        padding: 1rem 0.5rem;
-    }
-
-    .app-title {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .input-container {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .username-input {
-        min-width: 100%;
-        max-width: 300px;
-    }
-
-    .load-button {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    .chart-container {
-        padding: 1rem;
-        border-radius: 12px;
-    }
-
-    .chart-scroll-container {
-        min-width: 1000px; /* Slightly smaller on mobile but still wide */
-        height: 350px;
-    }
-    
-    .scroll-indicator {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-    }
-
-    .chart-legend {
-        max-height: 120px;
-        justify-content: flex-start;
-    }
-
-    .legend-name {
-        max-width: 120px;
-    }
-
-    .inactive-repos-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    .app-title {
-        font-size: 1.75rem;
-    }
-
-    .chart-container {
-        padding: 0.75rem;
-        margin: 0.25rem;
-    }
-
-    .chart-scroll-container {
-        height: 300px;
-    }
-
-    .legend-item {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.8rem;
-    }
-
-    .legend-name {
-        max-width: 100px;
-    }
-}
-
-.days-filter {
-    padding: 0.75rem 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.days-filter:focus {
-    outline: none;
-    border-color: #646cff;
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.days-filter option {
-    background: #1a1a2e;
-    color: #ffffff;
-}
 /* Enhanced Repository Stats */
 .repo-stats {
     margin-top: 2rem;
@@ -1080,8 +830,262 @@ body {
     padding-top: 0;
 }
 
-/* Responsive */
+/* Inactive Repositories Sections */
+#inactivitySections {
+    max-width: 1000px;
+    width: 100%;
+    margin: 2rem auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.inactive-repos {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.inactive-repos h3 {
+    margin: 0 0 1rem 0;
+    color: #ffffff;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    margin: -0.5rem 0 1rem 0;
+    line-height: 1.4;
+}
+
+.inactive-repos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.repo-status-card {
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.repo-status-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.repo-status-card.warning {
+    border-left-color: #ffa726;
+}
+
+.repo-status-card.inactive {
+    border-left-color: #ff6b6b;
+}
+
+.repo-status-card.very-inactive {
+    border-left-color: #ff4f4f;
+}
+
+.repo-status-card.empty {
+    border-left-color: #78909c;
+}
+
+.repo-status-card.error {
+    border-left-color: #ec407a;
+}
+
+.repo-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+}
+
+.repo-name {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 1rem;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.status-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.days-counter {
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.days-counter.recent {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.days-counter.moderate {
+    background: rgba(255, 167, 38, 0.2);
+    color: #ffa726;
+    border: 1px solid rgba(255, 167, 38, 0.3);
+}
+
+.days-counter.inactive {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.days-counter.very-inactive {
+    background: rgba(189, 68, 68, 0.2);
+    color: #bd4444;
+    border: 1px solid rgba(189, 68, 68, 0.3);
+}
+
+.days-counter.warning {
+    background: rgba(255, 167, 38, 0.2);
+    color: #ffa726;
+    border: 1px solid rgba(255, 167, 38, 0.3);
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-indicator.warning {
+    background: #ffa726;
+}
+
+.status-indicator.inactive {
+    background: #ff6b6b;
+}
+
+.status-indicator.very-inactive {
+    background: #ff4f4f;
+}
+
+.status-indicator.empty {
+    background: #78909c;
+}
+
+.status-indicator.error {
+    background: #ec407a;
+}
+
+.repo-status-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-reason {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.last-commit {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    font-family: monospace;
+}
+
+/* Enhanced scrollbar styling */
+.chart-wrapper-scrollable::-webkit-scrollbar {
+    height: 12px;
+}
+
+.chart-wrapper-scrollable::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    margin: 0 1rem;
+}
+
+.chart-wrapper-scrollable::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #646cff, #00d4aa);
+    border-radius: 6px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.chart-wrapper-scrollable::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #747bff, #00e6b8);
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
+    #app {
+        padding: 1rem 0.5rem;
+    }
+
+    .app-title {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-container {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .username-input {
+        min-width: 100%;
+        max-width: 300px;
+    }
+
+    .load-button {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .chart-container {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .chart-scroll-container {
+        min-width: 1000px;
+        height: 350px;
+    }
+    
+    .scroll-indicator {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .chart-legend {
+        max-height: 120px;
+        justify-content: flex-start;
+    }
+
+    .legend-name {
+        max-width: 120px;
+    }
+
     .stats-grid {
         grid-template-columns: 1fr;
     }
@@ -1099,6 +1103,62 @@ body {
     
     .view-toggle {
         align-self: flex-start;
+    }
+
+    #inactivitySections {
+        margin: 1rem auto;
+        gap: 1.5rem;
+    }
+    
+    .inactive-repos {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+    
+    .inactive-repos-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .repo-status-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .status-info {
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-title {
+        font-size: 1.75rem;
+    }
+
+    .chart-container {
+        padding: 0.75rem;
+        margin: 0.25rem;
+    }
+
+    .chart-scroll-container {
+        height: 300px;
+    }
+
+    .legend-item {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .legend-name {
+        max-width: 100px;
+    }
+
+    .inactive-repos {
+        padding: 0.75rem;
+    }
+    
+    .repo-status-card {
+        padding: 1rem;
     }
 }
 
