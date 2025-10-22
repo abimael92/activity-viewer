@@ -157,10 +157,11 @@ async function loadData() {
 
     // Calculate 21-day threshold date
     const twentyOneDaysAgo = new Date();
-    twentyOneDaysAgo.setDate(end.getDate() - 21);
+    twentyOneDaysAgo.setDate(twentyOneDaysAgo.getDate() - 21);
 
     const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(end.getDate() - 15);
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+
 
     // Generate daily labels and full dates
     const labels = [];
