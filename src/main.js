@@ -159,6 +159,9 @@ async function loadData() {
     const twentyOneDaysAgo = new Date();
     twentyOneDaysAgo.setDate(end.getDate() - 21);
 
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(end.getDate() - 15);
+
     // Generate daily labels and full dates
     const labels = [];
     const fullDates = [];
@@ -185,6 +188,7 @@ async function loadData() {
 
     // Track repositories with no recent commits and their inactivity periods
     const inactiveRepos = [];
+    const repos15Days = [];   // 15-20 days inactive
     // Track repository statistics
     const repoStats = [];
 
@@ -230,11 +234,21 @@ async function loadData() {
 
         // Track if repo has commits in last 21 days
         let hasCommitsInLast21Days = false;
+        let hasCommitsInLast15Days = false;
 
         commits.forEach(c => {
           if (c.commit?.author?.date) {
-            const date = c.commit.author.date.split('T')[0];
-            const index = dateMap[date];
+
+            // Get commit timestamp
+            const commitDateUTC = new Date(c.commit.author.date);
+
+            // Convert to local date (midnight of that day)
+            const localDate = new Date(commitDateUTC.getFullYear(), commitDateUTC.getMonth(), commitDateUTC.getDate());
+
+            // Format as yyyy-mm-dd for dateMap lookup
+            const dateStr = localDate.toISOString().split('T')[0];
+
+            const index = dateMap[dateStr];
             if (index !== undefined) {
               repoDailyCount[index]++;
               totalCommits++;
@@ -242,13 +256,17 @@ async function loadData() {
               // Track max commits day
               if (repoDailyCount[index] > maxCommits) {
                 maxCommits = repoDailyCount[index];
-                maxCommitsDate = date;
+                maxCommitsDate = dateStr;
               }
 
               // Check if this commit is within the last 21 days
               const commitDate = new Date(c.commit.author.date);
               if (commitDate >= twentyOneDaysAgo) {
                 hasCommitsInLast21Days = true;
+              }
+
+              if (commitDate >= fifteenDaysAgo) {
+                hasCommitsInLast15Days = true;
               }
 
               // Track last commit date
@@ -311,6 +329,15 @@ async function loadData() {
             lastCommit: lastCommitDate,
             daysWithoutCommits: daysWithoutCommits
           });
+        }
+        // Check if repo has been inactive for 15-20 days (but has commits in last 21 days)
+        else if (!hasCommitsInLast15Days && hasCommitsInLast21Days && lastCommitDate) {
+          repos15Days.push({
+            name: repo.name,
+            reason: 'No commits in last 15 days (but active in last 21 days)',
+            lastCommit: lastCommitDate,
+            daysWithoutCommits: daysWithoutCommits
+          });
         } else {
           // Create dataset for line chart only for active repos
           datasets.push({
@@ -349,6 +376,7 @@ async function loadData() {
       datasets,
       repoStats,
       inactiveRepos,
+      repos15Days,
       labels,
       fullDates
     };
@@ -379,7 +407,7 @@ async function loadData() {
 
 // Separate rendering function
 function renderData(data, username, daysFilter) {
-  const { datasets, repoStats, inactiveRepos, labels, fullDates } = data;
+  const { datasets, repoStats, inactiveRepos, repos15Days, labels, fullDates } = data;
   const container = document.getElementById('chartsContainer');
 
   // Build the HTML content
@@ -612,6 +640,48 @@ function renderData(data, username, daysFilter) {
       </div>`;
   }
 
+  // container.innerHTML = htmlContent;
+
+  // Add 15-day inactive repositories section if there are any
+  if (repos15Days.length > 0) {
+    // Sort by days without commits (descending)
+    repos15Days.sort((a, b) => {
+      if (a.daysWithoutCommits === 'N/A') return 1;
+      if (b.daysWithoutCommits === 'N/A') return -1;
+      return b.daysWithoutCommits - a.daysWithoutCommits;
+    });
+
+    htmlContent += `
+  <div class="inactive-repos">
+    <h3>Recently Inactive Repositories (15+ Days)</h3>
+    <p class="section-subtitle">Repositories with no commits in the last 15 days but had activity in the last 21 days</p>
+    <div class="inactive-repos-grid">
+      ${repos15Days.map(repo => `
+        <div class="repo-status-card warning">
+          <div class="repo-status-header">
+            <span class="repo-name">${repo.name}</span>
+            <div class="status-info">
+              ${repo.daysWithoutCommits !== 'N/A' ? `
+                <span class="days-counter warning">
+                  ${repo.daysWithoutCommits} day${repo.daysWithoutCommits !== 1 ? 's' : ''}
+                </span>
+              ` : ''}
+              <span class="status-indicator warning"></span>
+            </div>
+          </div>
+          <div class="repo-status-details">
+            <span class="status-reason">${repo.reason}</span>
+            ${repo.lastCommit ? `
+              <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
+            ` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>`;
+  }
+
+  // Set the HTML content only ONCE at the end
   container.innerHTML = htmlContent;
 
   // Only create chart if we have datasets
@@ -641,7 +711,7 @@ function renderData(data, username, daysFilter) {
             callbacks: {
               title: (tooltipItems) => {
                 const index = tooltipItems[0].dataIndex;
-                const date = new Date(fullDates[index]);
+                const date = new Date(fullDates[index] + 'T00:00:00');
                 return date.toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
@@ -654,6 +724,7 @@ function renderData(data, username, daysFilter) {
                 if (value === 0) {
                   return null;
                 }
+                const date = new Date(fullDates[context.dataIndex] + 'T00:00:00');
                 return `${context.dataset.label}: ${value} commit${value !== 1 ? 's' : ''}`;
               },
               afterBody: (tooltipItems) => {
@@ -736,6 +807,7 @@ function renderData(data, username, daysFilter) {
 
 // Helper functions
 function getStatusClass(reason) {
+  if (reason.includes('15 days')) return 'warning';
   if (reason.includes('21 days')) return 'inactive';
   if (reason.includes('Empty') || reason.includes('not found')) return 'empty';
   if (reason.includes('Error')) return 'error';
