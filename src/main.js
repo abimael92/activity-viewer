@@ -148,21 +148,22 @@ async function loadInactivityData(username) {
           daysWithoutCommits = Math.floor((today - lastCommitDate) / (1000 * 60 * 60 * 24));
         }
 
-        if (!hasCommitsInLast21Days && lastCommitDate) {
+        if ((daysWithoutCommits ?? 0) > 21 || !hasCommitsInLast21Days) {
           inactiveRepos.push({
             name: repo.name,
             reason: 'No commits in last 21 days',
             lastCommit: lastCommitDate,
-            daysWithoutCommits: daysWithoutCommits
+            daysWithoutCommits
           });
-        } else if (!hasCommitsInLast15Days && hasCommitsInLast21Days && lastCommitDate) {
+        } else if ((daysWithoutCommits ?? 0) > 15 && !hasCommitsInLast15Days) {
           repos15Days.push({
             name: repo.name,
-            reason: 'No commits in last 15 days (but active in last 21 days)',
+            reason: 'No commits in last 15 days',
             lastCommit: lastCommitDate,
-            daysWithoutCommits: daysWithoutCommits
+            daysWithoutCommits
           });
         }
+
 
         await delay(300);
       } catch (error) {
@@ -210,6 +211,7 @@ function renderInactivitySections(inactivityData, username) {
     htmlContent += `
       <div class="inactive-repos">
         <h3>Inactive Repositories</h3>
+                <p class="section-subtitle">Repositories with no commits in the last 21 days </p>
         <div class="inactive-repos-grid">
           ${inactiveRepos.map(repo => `
             <div class="repo-status-card ${getStatusClass(repo.reason)}">
@@ -225,7 +227,6 @@ function renderInactivitySections(inactivityData, username) {
                 </div>
               </div>
               <div class="repo-status-details">
-                <span class="status-reason">${repo.reason}</span>
                 ${repo.lastCommit ? `
                   <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
                 ` : ''}
@@ -247,8 +248,8 @@ function renderInactivitySections(inactivityData, username) {
 
     htmlContent += `
       <div class="inactive-repos">
-        <h3>Recently Inactive Repositories (15+ Days)</h3>
-        <p class="section-subtitle">Repositories with no commits in the last 15 days but had activity in the last 21 days</p>
+        <h3>Moderately Inactive Repositories</h3>
+        <p class="section-subtitle">Repositories with no commits in the last 15 days </p>
         <div class="inactive-repos-grid">
           ${repos15Days.map(repo => `
             <div class="repo-status-card warning">
@@ -264,7 +265,6 @@ function renderInactivitySections(inactivityData, username) {
                 </div>
               </div>
               <div class="repo-status-details">
-                <span class="status-reason">${repo.reason}</span>
                 ${repo.lastCommit ? `
                   <span class="last-commit">Last commit: ${formatDate(repo.lastCommit)}</span>
                 ` : ''}
@@ -282,7 +282,7 @@ function renderInactivitySections(inactivityData, username) {
   }
 }
 
-// Main data loading function - only for graph and stats
+// Main data loading function
 async function loadData() {
   const username = document.getElementById('username').value.trim();
   const daysFilter = document.getElementById('daysFilter').value;
@@ -386,7 +386,7 @@ async function loadData() {
       '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
     ];
 
-    // Track repository statistics (for graph only)
+    // Track repository statistics for stats section
     const repoStats = [];
 
     for (let i = 0; i < repos.length; i++) {
@@ -506,7 +506,7 @@ async function loadData() {
       }
     }
 
-    // Prepare data for caching and rendering (GRAPH ONLY - no inactivity data)
+    // Prepare data for caching and rendering
     const dataToCache = {
       datasets,
       repoStats,
@@ -517,7 +517,7 @@ async function loadData() {
     // Cache the results
     setCachedData(cacheKey, dataToCache);
 
-    // Render the data (GRAPH ONLY)
+    // Render the data
     renderData(dataToCache, username, daysFilter);
 
   } catch (error) {
@@ -538,12 +538,12 @@ async function loadData() {
   }
 }
 
-// Separate rendering function (GRAPH ONLY - no inactivity sections)
+// Separate rendering function for graph and stats
 function renderData(data, username, daysFilter) {
   const { datasets, repoStats, labels, fullDates } = data;
   const container = document.getElementById('chartsContainer');
 
-  // Build the HTML content (GRAPH AND STATS ONLY)
+  // Build the Graph and stats
   let htmlContent = '';
 
   if (datasets.length === 0) {
@@ -734,7 +734,6 @@ function renderData(data, username, daysFilter) {
       </div>`;
   }
 
-  // Set the HTML content only ONCE at the end
   container.innerHTML = htmlContent;
 
   // Only create chart if we have datasets
@@ -858,7 +857,7 @@ function renderData(data, username, daysFilter) {
   }
 }
 
-// Helper functions (keep all your existing helper functions exactly the same)
+// Helper functions
 function getStatusClass(reason) {
   if (reason.includes('15 days')) return 'warning';
   if (reason.includes('21 days')) return 'inactive';
@@ -869,8 +868,8 @@ function getStatusClass(reason) {
 
 function getDaysCounterClass(days) {
   if (days <= 7) return 'recent';
-  if (days <= 21) return 'moderate';
-  if (days <= 60) return 'inactive';
+  if (days <= 15) return 'moderate';
+  if (days <= 21) return 'inactive';
   return 'very-inactive';
 }
 
