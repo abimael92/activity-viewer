@@ -1,8 +1,7 @@
 import Chart from "chart.js/auto";
 
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const CACHE_DURATION = 15 * 60 * 1000;
 
-// Enhanced fetch function with better rate limit handling
 async function fetchWithAuth(url) {
   try {
     const response = await fetch(url, {
@@ -12,7 +11,6 @@ async function fetchWithAuth(url) {
       }
     });
 
-    // Enhanced rate limiting with better messaging
     if (response.status === 403) {
       const remaining = response.headers.get('X-RateLimit-Remaining');
       const resetTime = response.headers.get('X-RateLimit-Reset');
@@ -47,7 +45,6 @@ async function fetchWithAuth(url) {
   }
 }
 
-// Caching functions
 function getCachedData(key) {
   try {
     const cached = localStorage.getItem(`gh_${key}`);
@@ -76,7 +73,6 @@ function setCachedData(key, data) {
   }
 }
 
-// Separate function to load inactivity data (ALWAYS checks 30 days)
 async function loadInactivityData(username) {
   const cacheKey = `${username}_inactivity`;
   const cachedData = getCachedData(cacheKey);
@@ -164,10 +160,8 @@ async function loadInactivityData(username) {
           });
         }
 
-
         await delay(300);
       } catch (error) {
-        // Skip errors for inactivity detection
         continue;
       }
     }
@@ -180,7 +174,6 @@ async function loadInactivityData(username) {
   }
 }
 
-// Load inactivity sections independently
 async function loadInactivitySections() {
   const username = document.getElementById('username').value.trim();
   if (!username) return;
@@ -193,15 +186,12 @@ async function loadInactivitySections() {
   }
 }
 
-// Render only the inactivity sections
 function renderInactivitySections(inactivityData, username) {
   const { inactiveRepos, repos15Days } = inactivityData;
 
   let htmlContent = '';
 
-  // Add inactive repositories section if there are any
   if (inactiveRepos.length > 0) {
-    // Sort by days without commits (descending)
     inactiveRepos.sort((a, b) => {
       if (a.daysWithoutCommits === 'N/A') return 1;
       if (b.daysWithoutCommits === 'N/A') return -1;
@@ -211,7 +201,7 @@ function renderInactivitySections(inactivityData, username) {
     htmlContent += `
       <div class="inactive-repos">
         <h3>Inactive Repositories</h3>
-                <p class="section-subtitle">Repositories with no commits in the last 21 days </p>
+        <p class="section-subtitle">Repositories with no commits in the last 21 days </p>
         <div class="inactive-repos-grid">
           ${inactiveRepos.map(repo => `
             <div class="repo-status-card ${getStatusClass(repo.reason)}">
@@ -237,9 +227,7 @@ function renderInactivitySections(inactivityData, username) {
       </div>`;
   }
 
-  // Add 15-day inactive repositories section if there are any
   if (repos15Days.length > 0) {
-    // Sort by days without commits (descending)
     repos15Days.sort((a, b) => {
       if (a.daysWithoutCommits === 'N/A') return 1;
       if (b.daysWithoutCommits === 'N/A') return -1;
@@ -275,25 +263,21 @@ function renderInactivitySections(inactivityData, username) {
       </div>`;
   }
 
-  // Update only the inactivity sections container
   const inactivityContainer = document.getElementById('inactivitySections');
   if (inactivityContainer) {
     inactivityContainer.innerHTML = htmlContent;
   }
 }
 
-// Main data loading function
 async function loadData() {
   const username = document.getElementById('username').value.trim();
   const daysFilter = document.getElementById('daysFilter').value;
   const container = document.getElementById('chartsContainer');
 
-  // Add loading state prevention for rapid clicks
   if (container.classList.contains('loading')) {
     return;
   }
 
-  // Validate username
   if (!username) {
     container.innerHTML = `
       <div class="empty-state">
@@ -303,7 +287,6 @@ async function loadData() {
     return;
   }
 
-  // Add loading state
   container.classList.add('loading');
   container.innerHTML = `
     <div class="loading">
@@ -314,10 +297,8 @@ async function loadData() {
   `;
 
   try {
-    // Add delay between requests to be respectful to GitHub API
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-    // Check cache first
     const cacheKey = `${username}_${daysFilter}`;
     const cachedData = getCachedData(cacheKey);
 
@@ -327,7 +308,6 @@ async function loadData() {
       return;
     }
 
-    // Test user existence first
     const userRes = await fetchWithAuth(
       `https://api.github.com/users/${username}`
     );
@@ -347,7 +327,6 @@ async function loadData() {
 
     const repos = await repoRes.json();
 
-    // Check if user has repositories
     if (repos.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
@@ -362,7 +341,6 @@ async function loadData() {
     const start = new Date();
     start.setDate(end.getDate() - parseInt(daysFilter));
 
-    // Generate daily labels and full dates
     const labels = [];
     const fullDates = [];
     const dateMap = {};
@@ -386,54 +364,40 @@ async function loadData() {
       '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
     ];
 
-    // Track repository statistics for stats section
     const repoStats = [];
 
     for (let i = 0; i < repos.length; i++) {
       const repo = repos[i];
       let lastCommitDate = null;
 
-      // Initialize tracking variables for each repo
       let maxCommits = 0;
       let maxCommitsDate = null;
       let totalCommits = 0;
 
       try {
-        console.log(`Fetching commits for: ${repo.name}`);
-
-        // Fetch commits ONLY for the selected graph date range
         const commitsRes = await fetchWithAuth(
           `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100`
         );
 
         if (commitsRes.status === 409 || commitsRes.status === 404) {
-          // These are handled by inactivity data
           continue;
         }
 
         if (!commitsRes.ok) {
-          console.warn(`Skipping repo ${repo.name}, status: ${commitsRes.status}`);
           continue;
         }
 
         const commits = await commitsRes.json();
         if (!Array.isArray(commits)) {
-          console.warn(`No commits array for ${repo.name}`);
           continue;
         }
 
-        // Initialize daily counts for this repo
         const repoDailyCount = new Array(labels.length).fill(0);
 
         commits.forEach(c => {
           if (c.commit?.author?.date) {
-            // Get commit timestamp
             const commitDateUTC = new Date(c.commit.author.date);
-
-            // Convert to local date (midnight of that day)
             const localDate = new Date(commitDateUTC.getFullYear(), commitDateUTC.getMonth(), commitDateUTC.getDate());
-
-            // Format as yyyy-mm-dd for dateMap lookup
             const dateStr = localDate.toISOString().split('T')[0];
 
             const index = dateMap[dateStr];
@@ -441,13 +405,11 @@ async function loadData() {
               repoDailyCount[index]++;
               totalCommits++;
 
-              // Track max commits day
               if (repoDailyCount[index] > maxCommits) {
                 maxCommits = repoDailyCount[index];
                 maxCommitsDate = dateStr;
               }
 
-              // Track last commit date for this period only
               if (!lastCommitDate || commitDateUTC > lastCommitDate) {
                 lastCommitDate = commitDateUTC;
               }
@@ -455,7 +417,6 @@ async function loadData() {
           }
         });
 
-        // Calculate consecutive commit days
         let currentStreak = 0;
         let maxConsecutiveDays = 0;
         for (let count of repoDailyCount) {
@@ -467,7 +428,6 @@ async function loadData() {
           }
         }
 
-        // Add to repo stats if we have commits in selected period
         if (totalCommits > 0) {
           repoStats.push({
             name: repo.name,
@@ -477,10 +437,13 @@ async function loadData() {
             color: colors[i % colors.length],
             createdAt: repo.created_at,
             maxConsecutiveDays: maxConsecutiveDays,
-            description: repo.description
+            description: repo.description,
+            lastCommitDate: lastCommitDate,
+            language: repo.language,
+            stars: repo.stargazers_count,
+            forks: repo.forks_count
           });
 
-          // Create dataset for line chart only for active repos
           datasets.push({
             label: repo.name,
             data: repoDailyCount,
@@ -497,16 +460,13 @@ async function loadData() {
           });
         }
 
-        // Add delay between repository requests to avoid rate limiting
         await delay(500);
 
       } catch (error) {
-        console.warn(`Error processing repo ${repo.name}:`, error);
         continue;
       }
     }
 
-    // Prepare data for caching and rendering
     const dataToCache = {
       datasets,
       repoStats,
@@ -514,10 +474,7 @@ async function loadData() {
       fullDates
     };
 
-    // Cache the results
     setCachedData(cacheKey, dataToCache);
-
-    // Render the data
     renderData(dataToCache, username, daysFilter);
 
   } catch (error) {
@@ -538,12 +495,10 @@ async function loadData() {
   }
 }
 
-// Separate rendering function for graph and stats
 function renderData(data, username, daysFilter) {
   const { datasets, repoStats, labels, fullDates } = data;
   const container = document.getElementById('chartsContainer');
 
-  // Build the Graph and stats
   let htmlContent = '';
 
   if (datasets.length === 0) {
@@ -572,7 +527,6 @@ function renderData(data, username, daysFilter) {
       </div>`;
   }
 
-  // Add repo stats section only
   if (repoStats.length > 0) {
     htmlContent += `
       <div class="repo-stats">
@@ -624,7 +578,7 @@ function renderData(data, username, daysFilter) {
 
         <div class="stats-grid" id="statsContainer">
           ${repoStats.map((stat, index) => `
-            <div class="stat-card" data-repo="${stat.name.toLowerCase()}" data-commits="${stat.totalCommits}" data-streak="${stat.maxConsecutiveDays}">
+            <div class="stat-card ${stat.expanded ? 'expanded' : ''}" data-repo="${stat.name.toLowerCase()}" data-commits="${stat.totalCommits}" data-streak="${stat.maxConsecutiveDays}">
               <div class="card-header">
                 <div class="repo-main-info">
                   <div class="repo-avatar" style="background: linear-gradient(135deg, ${stat.color}20, ${stat.color}40); border-color: ${stat.color}">
@@ -636,6 +590,11 @@ function renderData(data, username, daysFilter) {
                       <span class="repo-age" data-tooltip="Repository age">
                         ${getRepositoryAge(stat.createdAt)}
                       </span>
+                      ${stat.language ? `
+                        <span class="repo-language" style="background: ${stat.color}20; color: ${stat.color}">
+                          ${stat.language}
+                        </span>
+                      ` : ''}
                     </div>
                   </div>
                 </div>
@@ -645,8 +604,8 @@ function renderData(data, username, daysFilter) {
                       <path d="M8 1.5l2.5 5 5.5.5-4 4 1 5.5-5-3-5 3 1-5.5-4-4 5.5-.5z"/>
                     </svg>
                   </button>
-                  <button class="action-btn expand-btn" data-tooltip="Show details">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <button class="action-btn expand-btn" data-tooltip="${stat.expanded ? 'Hide details' : 'Show details'}">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="${stat.expanded ? 'expanded' : ''}">
                       <path d="M4 6l4 4 4-4z"/>
                     </svg>
                   </button>
@@ -668,36 +627,67 @@ function renderData(data, username, daysFilter) {
                 </div>
               </div>
 
-              <div class="card-details">
-                <div class="detail-item">
-                  <div class="detail-content">
-                    <span class="detail-label">Peak Activity</span>
-                    <span class="detail-value">${formatDate(stat.maxCommitsDate)}</span>
+              <div class="card-details ${stat.expanded ? 'expanded' : 'collapsed'}">
+                <div class="basic-details">
+                  <div class="detail-item">
+                    <div class="detail-content">
+                      <span class="detail-label">Peak Activity</span>
+                      <span class="detail-value">${formatDate(stat.maxCommitsDate)}</span>
+                    </div>
                   </div>
+
+                  <div class="detail-item">
+                    <div class="detail-content">
+                      <span class="detail-label">Best Streak</span>
+                      <span class="detail-value">${stat.maxConsecutiveDays} consecutive days</span>
+                    </div>
+                  </div>
+
+                  ${stat.lastCommitDate ? `
+                  <div class="detail-item">
+                    <div class="detail-content">
+                      <span class="detail-label">Last Commit</span>
+                      <span class="detail-value">${formatDate(stat.lastCommitDate)}</span>
+                    </div>
+                  </div>
+                  ` : ''}
                 </div>
 
-                <div class="detail-item">
-                  <div class="detail-content">
-                    <span class="detail-label">Best Streak</span>
-                    <span class="detail-value">${stat.maxConsecutiveDays} consecutive days</span>
+                <div class="extended-details">
+                  ${stat.description ? `
+                  <div class="detail-item description">
+                    <div class="detail-content">
+                      <span class="detail-label">Description</span>
+                      <span class="detail-value">${stat.description}</span>
+                    </div>
                   </div>
-                </div>
+                  ` : ''}
 
-                ${stat.description ? `
-                <div class="detail-item description">
-                  <div class="detail-content">
-                    <span class="detail-label">Description</span>
-                    <span class="detail-value">${stat.description}</span>
+                  <div class="repo-metrics">
+                    <div class="metric-item">
+                      <span class="metric-icon">⭐</span>
+                      <span class="metric-value">${stat.stars || 0}</span>
+                      <span class="metric-label">Stars</span>
+                    </div>
+                    <div class="metric-item">
+                      <span class="metric-icon">🍴</span>
+                      <span class="metric-value">${stat.forks || 0}</span>
+                      <span class="metric-label">Forks</span>
+                    </div>
+                    <div class="metric-item">
+                      <span class="metric-icon">📅</span>
+                      <span class="metric-value">${getRepositoryAge(stat.createdAt)}</span>
+                      <span class="metric-label">Age</span>
+                    </div>
                   </div>
-                </div>
-                ` : ''}
 
-                <div class="activity-meter">
-                  <div class="meter-label">Activity Level</div>
-                  <div class="meter-bar">
-                    <div class="meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}" 
-                         style="width: ${Math.min((stat.totalCommits / 50) * 100, 100)}%">
-                      <span class="meter-text">${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}</span>
+                  <div class="activity-meter">
+                    <div class="meter-label">Activity Level</div>
+                    <div class="meter-bar">
+                      <div class="meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}" 
+                           style="width: ${Math.min((stat.totalCommits / 50) * 100, 100)}%">
+                        <span class="meter-text">${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -736,7 +726,6 @@ function renderData(data, username, daysFilter) {
 
   container.innerHTML = htmlContent;
 
-  // Only create chart if we have datasets
   if (datasets.length > 0) {
     const ctx = document.getElementById('commitChart').getContext('2d');
     const chart = new Chart(ctx, {
@@ -833,7 +822,6 @@ function renderData(data, username, daysFilter) {
       }
     });
 
-    // Add legend click handler after chart creation
     const chartLegend = document.getElementById('chartLegend');
     if (chartLegend) {
       chartLegend.addEventListener('click', (e) => {
@@ -843,7 +831,6 @@ function renderData(data, username, daysFilter) {
         const datasetIndex = parseInt(legendItem.dataset.index);
         const meta = chart.getDatasetMeta(datasetIndex);
 
-        // Toggle visibility
         meta.hidden = !meta.hidden;
         legendItem.classList.toggle('inactive');
         const toggle = legendItem.querySelector('.legend-toggle');
@@ -855,9 +842,39 @@ function renderData(data, username, daysFilter) {
       });
     }
   }
+
+  initializeExpandButtons();
 }
 
-// Helper functions
+// Add this function to handle the expand/collapse
+function initializeExpandButtons() {
+  const expandButtons = document.querySelectorAll('.expand-btn');
+
+  expandButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = button.closest('.stat-card');
+      const details = card.querySelector('.card-details');
+      const svg = button.querySelector('svg');
+
+      // Toggle expanded state
+      const isExpanded = details.classList.contains('expanded');
+
+      if (isExpanded) {
+        details.classList.remove('expanded');
+        details.classList.add('collapsed');
+        svg.classList.remove('expanded');
+        button.setAttribute('data-tooltip', 'Show details');
+      } else {
+        details.classList.remove('collapsed');
+        details.classList.add('expanded');
+        svg.classList.add('expanded');
+        button.setAttribute('data-tooltip', 'Hide details');
+      }
+    });
+  });
+}
+
 function getStatusClass(reason) {
   if (reason.includes('15 days')) return 'warning';
   if (reason.includes('21 days')) return 'inactive';
@@ -885,14 +902,12 @@ function formatDate(date) {
 function getRepoInitials(repoName) {
   if (!repoName) return '??';
 
-  // Handle camelCase, kebab-case, snake_case
   const words = repoName
     .replace(/([A-Z])/g, ' $1')
     .replace(/[-_]/g, ' ')
     .split(' ')
     .filter(word => word.length > 0);
 
-  // Take first 2-3 characters from the first word, or first letter of first two words
   if (words.length >= 2) {
     return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
   } else {
@@ -920,7 +935,6 @@ function getActivityLevel(totalCommits, streak) {
 }
 
 function generateSparkline(activity) {
-  // Simple sparkline generation - you can enhance this with real data
   const values = activity.length > 0 ? activity : [1, 3, 2, 5, 4, 3, 6];
   const max = Math.max(...values);
   return values.map(val =>
@@ -943,10 +957,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Load inactivity sections when page loads
     setTimeout(() => loadInactivitySections(), 1000);
   }
 });
-
-// Remove the auto-load on timeout to prevent rate limiting
-// setTimeout(loadData, 1000);
