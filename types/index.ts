@@ -24,7 +24,7 @@ export interface RepoStat {
 	createdAt: string;
 	maxConsecutiveDays: number;
 	description: string | null;
-	lastCommitDate: string | null;
+	lastCommitDate: string | null; // Change to Date | null
 	language: string | null;
 	stars: number;
 	forks: number;
@@ -43,8 +43,23 @@ export interface InactivityData {
 	repos15Days: InactiveRepo[];
 }
 
+export interface ChartDataset {
+	label: string;
+	data: number[];
+	backgroundColor: string;
+	borderColor: string;
+	borderWidth: number;
+	pointBackgroundColor: string;
+	pointBorderColor: string;
+	pointBorderWidth: number;
+	pointRadius: number;
+	pointHoverRadius: number;
+	fill: boolean;
+	tension: number;
+}
+
 export interface ChartData {
-	datasets: any[];
+	datasets: ChartDataset[];
 	repoStats: RepoStat[];
 	labels: string[];
 	fullDates: string[];
