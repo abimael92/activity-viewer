@@ -32,6 +32,7 @@ export interface RepoStat {
 }
 
 export interface InactiveRepo {
+	[key: string]: unknown;
 	name: string;
 	reason: string;
 	lastCommit: Date | null;
