@@ -48,9 +48,29 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        top: 30, // Space between legend and chart
+                        bottom: 30,
+                        left: 10,
+                        right: 10
+                    }
+                },
                 plugins: {
                     legend: {
-                        display: false
+                        position: 'bottom' as const,
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            font: {
+                                size: 14, // Bigger font size
+                                // weight: 'bold' as const,
+                            },
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 12,
+                            boxHeight: 12
+                        },
                     },
                     tooltip: {
                         mode: 'index' as const,
@@ -126,7 +146,14 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                         },
                         ticks: {
                             stepSize: 1,
-                            color: 'rgba(255, 255, 255, 0.7)'
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            callback: function (value) {
+                                return value;
+                            }
+                        },
+                        afterDataLimits: (scale) => {
+                            const maxValue = Math.max(...chartData.datasets.flatMap(dataset => dataset.data));
+                            scale.max = maxValue + 4; // Add 4 extra ticks at top
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
@@ -135,12 +162,15 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                     x: {
                         title: {
                             display: true,
-                            text: 'Date',
+                            text: 'Commits Date',
                             color: 'rgba(255, 255, 255, 0.7)'
                         },
                         ticks: {
                             color: 'rgba(255, 255, 255, 0.7)',
-                            maxTicksLimit: 5,
+                            padding: 10,
+                            maxTicksLimit: 15,
+                            maxRotation: 45,
+                            minRotation: 45
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.05)'
