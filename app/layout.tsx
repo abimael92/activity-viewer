@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-    title: 'Activity Viewer ',
+    title: 'Activity Viewer',
     description: 'Visualize GitHub commit activity across repositories',
     icons: {
         icon: [
@@ -10,10 +10,8 @@ export const metadata: Metadata = {
             { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
         ],
         apple: '/apple-touch-icon.png',
-        other: [
-            { rel: 'manifest', url: '/site.webmanifest' } // must be an IconDescriptor object
-        ]
     },
+    manifest: '/site.webmanifest', // Move manifest here
 }
 
 export default function RootLayout({
@@ -23,6 +21,10 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
+            <head>
+                {/* Add the missing favicon.ico as fallback */}
+                <link rel="icon" href="/favicon.ico" />
+            </head>
             <body className="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen text-white">
                 {children}
             </body>

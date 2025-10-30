@@ -31,7 +31,7 @@ body {
 }
 
 .app-title {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, #646cff, #00d4aa);
     -webkit-background-clip: text;
@@ -128,25 +128,27 @@ body {
 }
 
 .chart-container h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+    font-size: 1.8rem;
+    font-weight: 700;
     background: linear-gradient(135deg, #646cff, #00d4aa);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .chart-subtitle {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.9rem;
-    margin: 0 0 1rem 0;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 1.2rem;
+    margin: 1rem;
 }
 
 .chart-wrapper {
     width: 100%;
-    height: 400px;
+    height: 600px;
     margin-bottom: 1rem;
+    margin-top: 1rem;
 }
 
 /* Chart Legend */
@@ -161,6 +163,39 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
     max-height: 150px;
     overflow-y: auto;
+}
+
+#commitChart li {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 4px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
+}
+
+.chartjs-legend li {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 4px;
+    font-size: 16px !important; /* Bigger font size */
+    font-weight: 600 !important; /* Bolder text */
+}
+
+.chartjs-legend li:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Also target the text specifically */
+.chartjs-legend li span {
+    font-size: 16px !important;
+    font-weight: 600 !important;
 }
 
 .chartjs-tooltip {

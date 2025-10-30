@@ -513,7 +513,7 @@ function renderData(data, username, daysFilter) {
         <h2>${username}'s Daily Commit Activity (Last ${daysFilter} Days)</h2>
         <p class="chart-subtitle">Click legend items to toggle repositories</p>
         <div class="chart-wrapper">
-          <canvas id="commitChart"></canvas>
+          <canvas ref={chartRef} id="commitChart" />
         </div>
         <div class="chart-legend" id="chartLegend">
           ${datasets.map((dataset, index) => `

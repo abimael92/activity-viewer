@@ -65,31 +65,78 @@ export default function Home() {
 
             while (currentDate <= end) {
                 const dateStr = currentDate.toISOString().split('T')[0];
+
                 labels.push(
                     currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })
                 );
+
                 fullDates.push(dateStr);
                 dateMap[dateStr] = labels.length - 1;
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            const colors = [
-                '#646cff', '#00d4aa', '#ff6b6b', '#ffa726', '#ab47bc',
-                '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
+            const colors2 = [
+                '#FF3B3F', '#FF9F1C', '#F9F871', '#1BE7FF', '#9B5DE5',
+                '#F15BB5', '#00BBF9', '#00F5D4', '#073B4C', '#FF6B6B',
+                '#FF9671', '#FFC75F', '#2EC4B6', '#845EC2', '#0081CF',
+                '#4B4453', '#D65DB1', '#FF8066', '#00C9A7', '#C34A36',
+                '#FF5E5B', '#6A0572', '#AB83A1', '#38B000', '#FFB703',
+                '#219EBC', '#8ECAE6', '#E63946', '#F77F00', '#8338EC',
+                '#3A86FF', '#FF006E', '#FB5607', '#FFBE0B', '#06D6A0',
+                '#118AB2', '#EF476F', '#FFC300', '#FFD166', '#0aa67c',
+                '#E76F51', '#2A9D8F', '#264653', '#F4A261', '#E9C46A'
             ];
+
+            const colors = [
+                '#FF0000', // Red
+                '#FF7F00', // Orange
+                '#FFFF00', // Yellow
+                '#00FF00', // Lime
+                '#00FFFF', // Cyan
+                '#0000FF', // Blue
+                '#8B00FF', // Violet
+                '#FF1493', // Pink
+                '#808080', // Gray
+                '#000000', // Black
+                '#FFFFFF', // White
+            ];
+
+
+            // Use this function to ensure unique colors
+            const getColorForRepo = (index: number) => {
+                return colors[index % colors.length];
+            };
 
             const datasets: ChartDataset[] = [];
             const repoStats: RepoStat[] = [];
 
             for (let i = 0; i < repos.length; i++) {
                 const repo = repos[i];
-                const commitsRes = await fetchWithAuth(
-                    `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100`
-                );
+                let allCommits: GitHubCommit[] = [];
+                let page = 1;
+                let hasMoreCommits = true;
 
-                if (!commitsRes.ok) continue;
+                // Paginate through all commits
+                while (hasMoreCommits) {
+                    const commitsRes = await fetchWithAuth(
+                        `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100&page=${page}`
+                    );
 
-                const commits: GitHubCommit[] = await commitsRes.json();
+                    if (!commitsRes.ok) break;
+
+                    const commits: GitHubCommit[] = await commitsRes.json();
+
+                    if (commits.length === 0) {
+                        hasMoreCommits = false;
+                    } else {
+                        allCommits = allCommits.concat(commits);
+                        page++;
+
+                        // Safety check to avoid infinite loops
+                        if (page > 10) break; // Max 1000 commits per repo
+                    }
+                }
+
                 const repoDailyCount = new Array(labels.length).fill(0);
 
                 let totalCommits = 0;
@@ -97,15 +144,18 @@ export default function Home() {
                 let maxCommitsDate: string | null = null;
                 let lastCommitDate: string | null = null;
 
-                commits.forEach((c) => {
+                allCommits.forEach((c) => {
                     const commitDateStr = c.commit?.author?.date;
                     if (!commitDateStr) return;
 
-                    const dateStr = new Date(commitDateStr).toISOString().split('T')[0];
+                    const commitDate = new Date(commitDateStr);
+                    const dateStr = commitDate.toISOString().split('T')[0];
                     const index = dateMap[dateStr];
+
                     if (index !== undefined) {
                         repoDailyCount[index]++;
                         totalCommits++;
+
                         if (repoDailyCount[index] > maxCommits) {
                             maxCommits = repoDailyCount[index];
                             maxCommitsDate = dateStr;
@@ -117,7 +167,9 @@ export default function Home() {
                 });
 
                 let streak = 0, maxStreak = 0;
+
                 for (const count of repoDailyCount) {
+
                     if (count > 0) {
                         streak++;
                         maxStreak = Math.max(maxStreak, streak);
@@ -143,19 +195,36 @@ export default function Home() {
                     datasets.push({
                         label: repo.name,
                         data: repoDailyCount,
-                        backgroundColor: colors[i % colors.length] + '20',
-                        borderColor: colors[i % colors.length],
-                        borderWidth: 2,
-                        pointBackgroundColor: colors[i % colors.length],
+                        backgroundColor: getColorForRepo(i) + '20',
+                        borderColor: getColorForRepo(i),
+                        borderWidth: 2.5,  // Thicker lines
+                        pointBackgroundColor: getColorForRepo(i),
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1,
-                        pointRadius: 3,
-                        pointHoverRadius: 5,
+                        pointRadius: 4, // Larger points
+                        pointHoverRadius: 6,               // Larger hover points
                         fill: true,
-                        tension: 0.3,
+                        tension: 0.01, // slight curves
                     });
                 }
             }
+
+            // Add this right before setCachedData:
+            console.log('=== COMMIT DEBUG INFO ===');
+            console.log(`Total repos processed: ${repoStats.length}`);
+            console.log(`Total commits across all repos: ${repoStats.reduce((sum, repo) => sum + repo.totalCommits, 0)}`);
+            console.log('Commits per repo:');
+            repoStats.forEach(repo => {
+                console.log(`- ${repo.name}: ${repo.totalCommits} commits`);
+            });
+
+            // Add this after processing all repos
+            console.log('=== COMMITS PER DAY ===');
+            labels.forEach((label, index) => {
+                const dayTotal = datasets.reduce((sum, dataset) => sum + dataset.data[index], 0);
+                console.log(`${fullDates[index]} (${label}): ${dayTotal} commits`);
+            });
+
 
             const dataToCache: ChartData = { datasets, repoStats, labels, fullDates };
             setCachedData(cacheKey, dataToCache);
