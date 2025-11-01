@@ -1,36 +1,263 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+📊 GitHub Activity Viewer
+https://img.shields.io/badge/React-18-blue
+https://img.shields.io/badge/TypeScript-Strict-blue
+https://img.shields.io/badge/GitHub-API-green
+https://img.shields.io/badge/Chart.js-4.0-orange
 
-## Getting Started
+A comprehensive GitHub activity visualization dashboard that provides detailed insights into repository contributions, commit patterns, and development metrics.
 
-First, run the development server:
+🚀 Features
+📈 Activity Analytics
+Multi-timeframe Analysis - 7, 14, 30, 60, and 90-day views
 
-```bash
+Interactive Charts - Line charts with commit trends
+
+Repository Statistics - Detailed metrics for each repository
+
+Commit Patterns - Daily commit distribution and patterns
+
+📊 Repository Insights
+Total Commits - Overall contribution metrics
+
+Max Commits Per Day - Peak productivity analysis
+
+Consecutive Days - Development streak tracking
+
+Last Activity - Recent contribution timestamps
+
+Language Breakdown - Technology stack overview
+
+🎯 Advanced Metrics
+Inactivity Tracking - Identify dormant repositories
+
+Yearly Overview - Full-year contribution analysis
+
+Repository Filtering - Exclude specific repositories
+
+Performance Analytics - Development habit insights
+
+🛠️ Technology Stack
+Frontend: React 18 with TypeScript
+
+Charts: Chart.js with react-chartjs-2
+
+API: GitHub REST API v3
+
+Styling: CSS Modules with modern design
+
+State Management: React Hooks (useState, useEffect)
+
+Caching: Local storage for performance optimization
+
+📁 Project Structure
+text
+src/
+├── components/
+│   ├── Charts.tsx           # Main chart visualization
+│   ├── InactivitySections.tsx # Inactivity analysis
+│   └── RepoStats.tsx        # Repository statistics
+├── lib/
+│   └── github.ts           # GitHub API utilities
+├── types/
+│   └── index.ts           # TypeScript definitions
+└── app/
+    └── page.tsx           # Main application component
+🎨 Component Architecture
+Main Application (page.tsx)
+State Management: Username, time filters, chart data
+
+Data Fetching: GitHub API integration with error handling
+
+User Interface: Input controls and loading states
+
+Data Processing: Commit aggregation and metric calculation
+
+Charts Component
+Multi-repository Visualization: Overlay multiple repository activities
+
+Interactive Tooltips: Detailed commit information on hover
+
+Responsive Design: Adapts to different screen sizes
+
+Color-coded Repositories: Distinct colors for each repository
+
+Repository Statistics
+Metric Display: Total commits, streaks, peak activity
+
+Sorting & Filtering: Organized repository listing
+
+Progress Indicators: Visual representation of activity levels
+
+Repository Metadata: Language, stars, forks information
+
+🔧 Installation & Setup
+Prerequisites
+Node.js 16+
+
+GitHub account
+
+Personal Access Token (optional, for higher rate limits)
+
+Environment Setup
+bash
+# Clone the repository
+git clone <repository-url>
+cd github-activity-viewer
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+GitHub API Configuration
+typescript
+// lib/github.ts
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Optional
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+export const fetchWithAuth = async (url: string) => {
+  return fetch(url, {
+    headers: {
+      Authorization: GITHUB_TOKEN ? `token ${GITHUB_TOKEN}` : '',
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+};
+📊 API Integration
+GitHub Endpoints Used
+GET /users/{username} - User validation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+GET /users/{username}/repos - Repository listing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+GET /repos/{owner}/{repo}/commits - Commit history
 
-## Learn More
+Query parameters: since, until, per_page, page
 
-To learn more about Next.js, take a look at the following resources:
+Data Processing Pipeline
+User Validation - Verify GitHub username exists
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Repository Fetching - Get user's public repositories
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Commit Aggregation - Paginate through commit history
 
-## Deploy on Vercel
+Metric Calculation - Compute statistics and patterns
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Chart Preparation - Format data for visualization
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🎯 Key Features
+Timeframe Analysis
+typescript
+const calculateTimeframe = (days: number) => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - days);
+  return { start, end };
+};
+Commit Metrics
+Total Commits: Sum of all commits in timeframe
+
+Max Daily Commits: Highest single-day contribution
+
+Consecutive Days: Longest streak of daily commits
+
+Last Activity: Most recent commit date
+
+Repository Filtering
+typescript
+const ignoredRepos = [
+  "ecommerce-fe", "college_project", "my_portfolio2", 
+  "ecommerce_be", "postList", "my-portfolio"
+];
+📈 Visualization Features
+Chart Configuration
+Line Charts: Commit trends over time
+
+Point Styling: Interactive data points
+
+Area Fill: Visual commit volume representation
+
+Color Scheme: Distinct repository identification
+
+Responsive Design
+Mobile-first: Optimized for all screen sizes
+
+Loading States: User feedback during data fetching
+
+Error Handling: Graceful error messages and recovery
+
+🔄 Performance Optimizations
+Caching Strategy
+typescript
+const cacheKey = `chart_${username}_${daysFilter}d`;
+const cachedData = getCachedData<ChartData>(cacheKey);
+if (cachedData) return cachedData;
+Pagination Handling
+Commit Pagination: Handle repositories with extensive history
+
+Rate Limit Management: Respect GitHub API limits
+
+Error Recovery: Continue processing after individual repo errors
+
+🚀 Usage Examples
+Basic Usage
+Enter GitHub username
+
+Select timeframe (7-90 days)
+
+Click "Load Activity"
+
+View interactive charts and statistics
+
+Advanced Analysis
+Compare multiple repository activities
+
+Track development streaks and patterns
+
+Identify inactive repositories
+
+Analyze yearly contribution trends
+
+🎨 Customization
+Adding New Metrics
+typescript
+interface RepoStat {
+  // Existing properties
+  newMetric?: number;
+}
+Custom Color Schemes
+typescript
+const customColors = [
+  '#your-color-1', '#your-color-2', '#your-color-3'
+];
+📱 Browser Support
+Chrome/Chromium 90+
+
+Firefox 88+
+
+Safari 14+
+
+Edge 90+
+
+🤝 Contributing
+Fork the repository
+
+Create feature branch (git checkout -b feature/amazing-feature)
+
+Commit changes (git commit -m 'Add amazing feature')
+
+Push to branch (git push origin feature/amazing-feature)
+
+Open Pull Request
+
+📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+🆘 Support
+For support and questions:
+
+Check the GitHub Issues for existing solutions
+
+Create a new issue with detailed description
+
+Provide relevant error messages and reproduction steps
+
+Built for the developer community
