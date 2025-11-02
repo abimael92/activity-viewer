@@ -109,7 +109,7 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
             </div>
 
             <div className={`stats-grid ${view === 'list' ? '!grid-cols-1' : ''}`}>
-                {sortedStats.map((stat) => (
+                {sortedStats.slice(0, 10).map((stat) => (
                     <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
                         <div className="card-header">
                             <div className="repo-main-info">
