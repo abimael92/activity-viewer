@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { RepoStat, ChartData } from '@/types';
+import { RepoStat } from '@/types';
 
 interface RepoStatsProps {
     stats: RepoStat[];
@@ -15,82 +15,53 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
 
     const toggleExpand = (repoName: string) => {
         const newExpanded = new Set(expandedCards);
-        if (newExpanded.has(repoName)) {
-            newExpanded.delete(repoName);
-        } else {
-            newExpanded.add(repoName);
-        }
+        newExpanded.has(repoName) ? newExpanded.delete(repoName) : newExpanded.add(repoName);
         setExpandedCards(newExpanded);
     };
 
-    const getCurrentYearActivity = (stat: RepoStat) => {
-        const currentYear = new Date().getFullYear();
-        const yearStart = new Date(`${currentYear}-01-01T00:00:00Z`);
-        const lastCommit = stat.lastCommitDate ? new Date(stat.lastCommitDate) : null;
-
-        if (!lastCommit || lastCommit < yearStart) {
-            return 'inactive';
-        }
-        return 'active';
-    };
-
-
     const getRepoInitials = (repoName: string) => {
-        if (!repoName) return '??';
-
         const words = repoName
             .replace(/([A-Z])/g, ' $1')
             .replace(/[-_]/g, ' ')
             .split(' ')
-            .filter(word => word.length > 0);
-
-        if (words.length >= 2) {
-            return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
-        } else {
-            return repoName.substring(0, 2).toUpperCase();
-        }
+            .filter(Boolean);
+        return words.length >= 2
+            ? (words[0][0] + words[1][0]).toUpperCase()
+            : repoName.substring(0, 2).toUpperCase();
     };
 
     const getRepositoryAge = (createdAt: string) => {
         const created = new Date(createdAt);
-        const now = new Date();
-        const diffTime = Math.abs(now.getTime() - created.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+        const diffDays = Math.ceil((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays < 30) return `${diffDays} days`;
         if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`;
         return `${Math.floor(diffDays / 365)} years`;
     };
 
     const getActivityLevel = (totalCommits: number, streak: number) => {
-        const score = totalCommits + (streak * 2);
+        const score = totalCommits + streak * 2;
         if (score > 50) return 'very-high';
         if (score > 25) return 'high';
         if (score > 10) return 'medium';
         return 'low';
     };
 
-    const formatDate = (date: string | null) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
+    const formatDate = (date: string | null) =>
+        date
+            ? new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : 'N/A';
 
     const sortedStats = [...stats].sort((a, b) => {
         switch (sortBy) {
-            case 'name':
-                return a.name.localeCompare(b.name);
             case 'commits':
                 return b.totalCommits - a.totalCommits;
             case 'recent':
-                return new Date(b.lastCommitDate || b.createdAt).getTime() - new Date(a.lastCommitDate || a.createdAt).getTime();
+                return new Date(b.lastCommitDate || b.createdAt).getTime() -
+                    new Date(a.lastCommitDate || a.createdAt).getTime();
             case 'streak':
                 return b.maxConsecutiveDays - a.maxConsecutiveDays;
             default:
-                return 0;
+                return a.name.localeCompare(b.name);
         }
     });
 
@@ -104,7 +75,9 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                         <span className="summary-label">Active Repos</span>
                     </span>
                     <span className="summary-item">
-                        <span className="summary-count">{stats.reduce((sum, stat) => sum + stat.totalCommits, 0)}</span>
+                        <span className="summary-count">
+                            {stats.reduce((sum, s) => sum + s.totalCommits, 0)}
+                        </span>
                         <span className="summary-label">Total Commits</span>
                     </span>
                 </div>
@@ -115,28 +88,11 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                     <button
                         className={`view-btn ${view === 'grid' ? 'active' : ''}`}
                         onClick={() => setView('grid')}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <rect x="1" y="1" width="4" height="4" rx="1" />
-                            <rect x="1" y="7" width="4" height="4" rx="1" />
-                            <rect x="7" y="1" width="4" height="4" rx="1" />
-                            <rect x="7" y="7" width="4" height="4" rx="1" />
-                            <rect x="13" y="1" width="2" height="4" rx="1" />
-                            <rect x="13" y="7" width="2" height="4" rx="1" />
-                        </svg>
-                        Grid
-                    </button>
+                    >Grid</button>
                     <button
                         className={`view-btn ${view === 'list' ? 'active' : ''}`}
                         onClick={() => setView('list')}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <rect x="1" y="1" width="14" height="2" rx="1" />
-                            <rect x="1" y="7" width="14" height="2" rx="1" />
-                            <rect x="1" y="13" width="14" height="2" rx="1" />
-                        </svg>
-                        List
-                    </button>
+                    >List</button>
                 </div>
                 <div className="sort-controls">
                     <select
@@ -153,11 +109,8 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
             </div>
 
             <div className={`stats-grid ${view === 'list' ? '!grid-cols-1' : ''}`}>
-                {sortedStats.map((stat, index) => (
-                    <div
-                        key={index}
-                        className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}
-                    >
+                {sortedStats.map((stat) => (
+                    <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
                         <div className="card-header">
                             <div className="repo-main-info">
                                 <div
@@ -171,49 +124,26 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                                 </div>
                                 <div className="repo-title">
                                     <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
-                                    <div className="repo-meta" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                                            <span className="repo-age" title="Repository age">
-                                                {getRepositoryAge(stat.createdAt)} old
-                                            </span>
-                                            <span className="repo-age" title="Created date">
-                                                {formatDate(stat.createdAt)}
-                                            </span>
-                                        </div>
+                                    <div className="repo-meta">
+                                        <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                        <span>{formatDate(stat.createdAt)}</span>
                                         {stat.language && (
                                             <span
                                                 className="repo-language"
-                                                style={{ background: `${stat.color}20`, color: stat.color, padding: '2px 6px', borderRadius: '4px' }}
+                                                style={{ background: `${stat.color}20`, color: stat.color }}
                                             >
                                                 {stat.language}
                                             </span>
                                         )}
                                     </div>
-
                                 </div>
                             </div>
-                            <div className="repo-actions">
-                                <button className="action-btn favorite-btn" title="Add to favorites">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 1.5l2.5 5 5.5.5-4 4 1 5.5-5-3-5 3 1-5.5-4-4 5.5-.5z" />
-                                    </svg>
-                                </button>
-                                <button
-                                    className="action-btn expand-btn"
-                                    title={expandedCards.has(stat.name) ? 'Hide details' : 'Show details'}
-                                    onClick={() => toggleExpand(stat.name)}
-                                >
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        className={expandedCards.has(stat.name) ? 'expanded' : ''}
-                                    >
-                                        <path d="M4 6l4 4 4-4z" />
-                                    </svg>
-                                </button>
-                            </div>
+                            <button
+                                className="expand-btn"
+                                onClick={() => toggleExpand(stat.name)}
+                            >
+                                {expandedCards.has(stat.name) ? '−' : '+'}
+                            </button>
                         </div>
 
                         <div className="card-stats">
@@ -221,72 +151,43 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                                 <span className="stat-value">{stat.totalCommits}</span>
                                 <span className="stat-label">Total</span>
                             </div>
-                            <div className={`stat-pill ${stat.maxCommits >= 5 ? 'highlight' : 'secondary'}`}>
+                            <div className="stat-pill secondary">
                                 <span className="stat-value">{stat.maxCommits}</span>
                                 <span className="stat-label">Peak</span>
                                 <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>
-
                             </div>
-                            <div className={`stat-pill ${stat.maxConsecutiveDays >= 7 ? 'success' : 'secondary'}`}>
+                            <div className="stat-pill success">
                                 <span className="stat-value">{stat.maxConsecutiveDays}</span>
                                 <span className="stat-label">Streak</span>
                             </div>
                         </div>
 
-                        <div className={`card-details ${expandedCards.has(stat.name) ? 'expanded' : 'collapsed'}`}>
-                            <div className="basic-details">
+                        {expandedCards.has(stat.name) && (
+                            <div className="card-details">
+                                {stat.description && (
+                                    <div className="detail-item">
+                                        <span className="detail-label">Description</span>
+                                        <span className="detail-value">{stat.description}</span>
+                                    </div>
+                                )}
                                 {stat.lastCommitDate && (
                                     <div className="detail-item">
-                                        <div className="detail-content">
-                                            <span className="detail-label">Last Commit</span>
-                                            <span className="detail-value">{formatDate(stat.lastCommitDate)}</span>
-                                        </div>
+                                        <span className="detail-label">Last Commit</span>
+                                        <span className="detail-value">{formatDate(stat.lastCommitDate)}</span>
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="extended-details">
-                                {stat.description && (
-                                    <div className="detail-item description">
-                                        <div className="detail-content">
-                                            <span className="detail-label">Description</span>
-                                            <span className="detail-value">{stat.description}</span>
-                                        </div>
-                                    </div>
-                                )}
-
                                 <div className="activity-meter">
-                                    <div className="meter-label">Activity Level</div>
                                     <div className="meter-bar">
-                                        {/* <div
+                                        <div
                                             className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
-                                            style={{ width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%` }}
-                                        >
-                                            <span className="meter-text">
-                                                {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}
-                                            </span>
-                                        </div> */}
-
-                                        {(() => {
-                                            const activityScore = Math.min(
-                                                (stat.totalCommits + stat.maxConsecutiveDays * 2) / 70 * 100,
-                                                100
-                                            );
-                                            return (
-                                                <div
-                                                    className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
-                                                    style={{ width: `${activityScore}%` }}
-                                                >
-                                                    <span className="meter-text">
-                                                        {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })()}
+                                            style={{
+                                                width: `${Math.min((stat.totalCommits + stat.maxConsecutiveDays * 2) / 70 * 100, 100)}%`
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="card-footer">
                             <div className="commit-trend">
@@ -300,10 +201,20 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                                     <div className="sparkline-bar" style={{ height: '85%' }}></div>
                                     <div className="sparkline-bar" style={{ height: '55%' }}></div>
                                 </div>
+
+                                {stat.lastDayCommits !== undefined && (
+                                    <div className="last-day-commits">
+                                        <span className="trend-label">Last Day Commits:</span>{' '}
+                                        <span className="trend-value">{stat.lastDayCommits}</span>
+                                    </div>
+                                )}
                             </div>
+
                             <button
                                 className="view-repo-btn"
-                                onClick={() => window.open(`https://github.com/${username}/${stat.name}`, '_blank')}
+                                onClick={() =>
+                                    window.open(`https://github.com/${username}/${stat.name}`, '_blank')
+                                }
                             >
                                 View Repo
                                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">

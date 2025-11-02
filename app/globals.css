@@ -676,6 +676,24 @@ body {
     font-style: italic;
 }
 
+.card-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+}
+
+.card-details.expanded {
+  max-height: 500px; /* or something large enough */
+  opacity: 1;
+}
+
+.card-details.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+
 .activity-meter {
     margin-top: 0.5rem;
 }

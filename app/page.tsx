@@ -15,7 +15,7 @@ interface GitHubRepo {
     name: string;
     created_at: string;
     description: string | null;
-    language: string | null;
+    language?: string | null;
     stargazers_count: number;
     forks_count: number;
 }
@@ -187,7 +187,7 @@ export default function Home() {
                         description: repo.description,
                         createdAt: repo.created_at,
                         color: colors[i % colors.length],
-                        language: repo.language,
+                        language: repo.language ?? undefined,
                         stars: repo.stargazers_count,
                         forks: repo.forks_count,
                     });
@@ -362,7 +362,7 @@ export default function Home() {
                     description: repo.description ?? null,
                     createdAt: repo.created_at,
                     color: colors[i % colors.length],
-                    language: repo.language ?? null,
+                    language: repo.language ?? undefined,
                     stars: repo.stargazers_count ?? 0,
                     forks: repo.forks_count ?? 0,
                 });
@@ -380,7 +380,7 @@ export default function Home() {
                     description: repo.description ?? null,
                     createdAt: repo.created_at,
                     color: colors[i % colors.length],
-                    language: repo.language ?? null,
+                    language: repo.language ?? undefined,
                     stars: repo.stargazers_count ?? 0,
                     forks: repo.forks_count ?? 0,
                 });
