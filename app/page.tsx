@@ -133,7 +133,7 @@ export default function Home() {
                         page++;
 
                         // Safety check to avoid infinite loops
-                        if (page > 10) break; // Max 1000 commits per repo
+                        if (page > 10) break;
                     }
                 }
 
