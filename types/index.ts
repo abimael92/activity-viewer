@@ -24,8 +24,8 @@ export interface RepoStat {
 	createdAt: string;
 	maxConsecutiveDays: number;
 	description: string | null;
-	lastCommitDate: string | null; // Change to Date | null
-	language: string | null;
+	language?: string;
+	lastCommitDate: string | null; // Change to Date | null lastDayCommits?: number; 	language: string | null;
 	stars: number;
 	forks: number;
 	expanded?: boolean;
