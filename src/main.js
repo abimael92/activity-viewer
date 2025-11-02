@@ -439,7 +439,7 @@ async function loadData() {
             maxConsecutiveDays: maxConsecutiveDays,
             description: repo.description,
             lastCommitDate: lastCommitDate,
-            language: repo.language,
+            language: repo.language ?? null,
             stars: repo.stargazers_count,
             forks: repo.forks_count
           });
