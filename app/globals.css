@@ -454,16 +454,16 @@ body {
 }
 
 /* Ensure 3 columns on large screens */
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
     .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* 2 columns on medium screens */
-@media (max-width: 1023px) and (min-width: 768px) {
+/* 2 columns on medium screens - FIXED */
+@media (max-width: 1199px) and (min-width: 768px) {
     .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns:  1fr;
     }
 }
 
@@ -472,7 +472,8 @@ body {
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+}
+
 .stat-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -712,7 +713,6 @@ body {
   max-height: 0;
   opacity: 0;
 }
-
 
 .activity-meter {
     margin-top: 0.5rem;
@@ -1198,7 +1198,6 @@ body {
     animation-delay: 0.2s;
 }
 
-
 /* Show More/Less Controls */
 .show-more-controls {
     display: flex;
@@ -1290,13 +1289,14 @@ body {
     margin-bottom: 1.5rem;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
-@media (max-width: 1023px) and (min-width: 768px) {
+/* 2 columns on medium screens - FIXED */
+@media (max-width: 1199px) and (min-width: 768px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1386,40 +1386,4 @@ body {
 
 .show-more-controls {
     position: relative;
-}
-
-/* Enhanced responsive design */
-@media (max-width: 480px) {
-    .show-more-btn, .show-less-btn {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.85rem;
-    }
-    
-    .show-more-controls {
-        margin: 1.5rem 0;
-        padding: 0.5rem;
-    }
-}
-
-/* Dark mode enhancements */
-@media (prefers-color-scheme: dark) {
-    .show-more-btn, .show-less-btn {
-        background: rgba(100, 108, 255, 0.1);
-        border-color: rgba(100, 108, 255, 0.4);
-    }
-    
-    .show-more-btn:hover, .show-less-btn:hover {
-        background: rgba(100, 108, 255, 0.2);
-    }
-}
-
-/* Print styles */
-@media print {
-    .show-more-controls {
-        display: none;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
 }
