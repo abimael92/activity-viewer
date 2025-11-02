@@ -12,11 +12,20 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
     const [view, setView] = useState<'grid' | 'list'>('grid');
     const [sortBy, setSortBy] = useState<string>('name');
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+    const [visibleCount, setVisibleCount] = useState<number>(3);
 
     const toggleExpand = (repoName: string) => {
         const newExpanded = new Set(expandedCards);
         newExpanded.has(repoName) ? newExpanded.delete(repoName) : newExpanded.add(repoName);
         setExpandedCards(newExpanded);
+    };
+
+    const showMore = () => {
+        setVisibleCount(prev => Math.min(prev + 3, 10));
+    };
+
+    const showLess = () => {
+        setVisibleCount(3);
     };
 
     const getRepoInitials = (repoName: string) => {
@@ -65,6 +74,10 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
         }
     });
 
+    const visibleStats = sortedStats.slice(0, visibleCount);
+    const canShowMore = visibleCount < Math.min(stats.length, 10);
+    const canShowLess = visibleCount > 3;
+
     return (
         <div className="repo-stats">
             <div className="section-header">
@@ -108,8 +121,8 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                 </div>
             </div>
 
-            <div className={`stats-grid ${view === 'list' ? '!grid-cols-1' : ''}`}>
-                {sortedStats.map((stat) => (
+            <div className={`stats-grid ${view === 'list' ? '!grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {visibleStats.map((stat) => (
                     <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
                         <div className="card-header">
                             <div className="repo-main-info">
@@ -224,6 +237,20 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Show More/Less Controls */}
+            <div className="show-more-controls">
+                {canShowMore && (
+                    <button className="show-more-btn" onClick={showMore}>
+                        Show More (+3)
+                    </button>
+                )}
+                {canShowLess && (
+                    <button className="show-less-btn" onClick={showLess}>
+                        Show Less
+                    </button>
+                )}
             </div>
 
             <div className="stats-footer">
