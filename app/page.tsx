@@ -95,7 +95,7 @@ const processRepoCommits = async (
             if (!commitDateStr) return;
 
             const commitDate = new Date(commitDateStr);
-            const dateStr = new Date(commitDateStr).toISOString().split('T')[0];
+            const dateStr = commitDate.toISOString().split('T')[0];
 
             const index = dateMap[dateStr];
             if (index !== undefined) {
