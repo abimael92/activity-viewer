@@ -447,10 +447,10 @@ body {
 
 /* Enhanced Stat Cards */
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+	gap: 1.5rem;
+	margin-bottom: 1.5rem;
 }
 
 /* Ensure 3 columns on large screens */
@@ -713,6 +713,27 @@ body {
   max-height: 0;
   opacity: 0;
 }
+
+.expand-btn {
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: #fff;
+	font-size: 1.2rem;
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.expand-btn:hover {
+	background: rgba(255, 255, 255, 0.2);
+	transform: scale(1.05);
+}
+
 
 .activity-meter {
     margin-top: 0.5rem;
@@ -1102,10 +1123,6 @@ body {
         max-width: 120px;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
     .section-header {
         flex-direction: column;
         align-items: flex-start;
@@ -1279,27 +1296,6 @@ body {
 
 .stats-grid .stat-card:nth-child(10) {
     animation-delay: 0.3s;
-}
-
-/* Enhanced grid layout for 3 columns */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-@media (min-width: 1200px) {
-    .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-/* 2 columns on medium screens - FIXED */
-@media (max-width: 1199px) and (min-width: 768px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
 
 @media (max-width: 767px) {
