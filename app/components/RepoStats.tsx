@@ -5,14 +5,20 @@ import { RepoStat } from '@/types';
 
 interface RepoStatsProps {
     stats: RepoStat[];
+    loading: boolean,
     username: string;
 }
 
-export default function RepoStats({ stats, username }: RepoStatsProps) {
+export default function RepoStats({ stats, loading, username }: RepoStatsProps) {
     const [view, setView] = useState<'grid' | 'list'>('grid');
     const [sortBy, setSortBy] = useState<string>('name');
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
     const [visibleCount, setVisibleCount] = useState<number>(3);
+
+    console.log('this are the stats: ', stats);
+
+
+    const [now] = useState(() => Date.now());
 
     const toggleExpand = (repoName: string) => {
         const newExpanded = new Set(expandedCards);
@@ -40,12 +46,14 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
     };
 
     const getRepositoryAge = (createdAt: string) => {
+        if (!now) return '...';
         const created = new Date(createdAt);
-        const diffDays = Math.ceil((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil((now - created.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays < 30) return `${diffDays} days`;
         if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`;
         return `${Math.floor(diffDays / 365)} years`;
     };
+
 
     const getActivityLevel = (totalCommits: number, streak: number) => {
         const score = totalCommits + streak * 2;
@@ -80,189 +88,223 @@ export default function RepoStats({ stats, username }: RepoStatsProps) {
 
     return (
         <div className="repo-stats">
-            <div className="section-header">
-                <h3 className="text-2xl font-bold">Repository Insights</h3>
-                <div className="stats-summary">
-                    <span className="summary-item">
-                        <span className="summary-count">{stats.length}</span>
-                        <span className="summary-label">Active Repos</span>
-                    </span>
-                    <span className="summary-item">
-                        <span className="summary-count">
-                            {stats.reduce((sum, s) => sum + s.totalCommits, 0)}
-                        </span>
-                        <span className="summary-label">Total Commits</span>
-                    </span>
+            {/* Add loading state at the beginning */}
+            {loading && (
+                <div className="loading">
+                    <div className="loading-spinner"></div>
+                    <p>Loading repository insights...</p>
                 </div>
-            </div>
+            )}
 
-            <div className="stats-controls">
-                <div className="view-toggle">
-                    <button
-                        className={`view-btn ${view === 'grid' ? 'active' : ''}`}
-                        onClick={() => setView('grid')}
-                    >Grid</button>
-                    <button
-                        className={`view-btn ${view === 'list' ? 'active' : ''}`}
-                        onClick={() => setView('list')}
-                    >List</button>
-                </div>
-                <div className="sort-controls">
-                    <select
-                        className="sort-select"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                    >
-                        <option value="name">Sort by Name</option>
-                        <option value="commits">Sort by Commits</option>
-                        <option value="recent">Sort by Recent</option>
-                        <option value="streak">Sort by Streak</option>
-                    </select>
-                </div>
-            </div>
+            {/* Wrap existing content in a conditional */}
+            {!loading && (
+                <>
+                    <div className="repo-stats">
+                        <div className="section-header">
+                            <h3 className="text-2xl font-bold">Repository Insights</h3>
+                            <div className="stats-summary">
+                                <span className="summary-item">
+                                    <span className="summary-count">{stats.length}</span>
+                                    <span className="summary-label">Active Repos</span>
+                                </span>
+                                <span className="summary-item">
+                                    <span className="summary-count">
+                                        {stats.reduce((sum, s) => sum + s.totalCommits, 0)}
+                                    </span>
+                                    <span className="summary-label">Total Commits</span>
+                                </span>
+                            </div>
+                        </div>
 
-            <div className={`stats-grid ${view === 'list' ? '!grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-                {visibleStats.map((stat) => (
-                    <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
-                        <div className="card-header">
-                            <div className="repo-main-info">
-                                <div
-                                    className="repo-avatar"
-                                    style={{
-                                        background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}40)`,
-                                        borderColor: stat.color
-                                    }}
+                        <div className="stats-controls">
+                            <div className="view-toggle">
+                                <button
+                                    className={`view-btn ${view === 'grid' ? 'active' : ''}`}
+                                    onClick={() => setView('grid')}
                                 >
-                                    <span style={{ color: stat.color }}>{getRepoInitials(stat.name)}</span>
-                                </div>
-                                <div className="repo-title">
-                                    <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
-                                    <div className="repo-meta">
-                                        <span>{getRepositoryAge(stat.createdAt)} old</span>
-                                        <span>{formatDate(stat.createdAt)}</span>
-                                        {stat.language && (
-                                            <span
-                                                className="repo-language"
-                                                style={{ background: `${stat.color}20`, color: stat.color }}
+
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <rect x="1" y="1" width="4" height="4" rx="1" />
+                                        <rect x="1" y="7" width="4" height="4" rx="1" />
+                                        <rect x="7" y="1" width="4" height="4" rx="1" />
+                                        <rect x="7" y="7" width="4" height="4" rx="1" />
+                                        <rect x="13" y="1" width="2" height="4" rx="1" />
+                                        <rect x="13" y="7" width="2" height="4" rx="1" />
+                                    </svg>
+                                    Grid
+                                </button>
+                                <button
+                                    className={`view-btn ${view === 'list' ? 'active' : ''}`}
+                                    onClick={() => setView('list')}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <rect x="1" y="1" width="14" height="2" rx="1" />
+                                        <rect x="1" y="7" width="14" height="2" rx="1" />
+                                        <rect x="1" y="13" width="14" height="2" rx="1" />
+                                    </svg>
+                                    List
+                                </button>
+                            </div>
+                            <div className="sort-controls">
+                                <select
+                                    className="sort-select"
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                >
+                                    <option value="name">Sort by Name</option>
+                                    <option value="commits">Sort by Commits</option>
+                                    <option value="recent">Sort by Recent</option>
+                                    <option value="streak">Sort by Streak</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className={`stats-grid grid grid-cols-1 sm:grid-cols-2 gap-6`}>
+
+                            {visibleStats.map((stat) => (
+                                <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
+                                    <div className="card-header">
+                                        <div className="repo-main-info">
+                                            <div
+                                                className="repo-avatar"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}40)`,
+                                                    borderColor: stat.color
+                                                }}
                                             >
-                                                {stat.language}
-                                            </span>
-                                        )}
+                                                <span style={{ color: stat.color }}>{getRepoInitials(stat.name)}</span>
+                                            </div>
+                                            <div className="repo-title">
+                                                <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
+                                                <div className="repo-meta">
+                                                    <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                    <span>{formatDate(stat.createdAt)}</span>
+                                                    {stat.language && (
+                                                        <span
+                                                            className="repo-language"
+                                                            style={{ background: `${stat.color}20`, color: stat.color }}
+                                                        >
+                                                            {stat.language}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="expand-btn"
+                                            onClick={() => toggleExpand(stat.name)}
+                                        >
+                                            {expandedCards.has(stat.name) ? '−' : '+'}
+                                        </button>
                                     </div>
-                                </div>
-                            </div>
-                            <button
-                                className="expand-btn"
-                                onClick={() => toggleExpand(stat.name)}
-                            >
-                                {expandedCards.has(stat.name) ? '−' : '+'}
-                            </button>
-                        </div>
 
-                        <div className="card-stats">
-                            <div className="stat-pill primary">
-                                <span className="stat-value">{stat.totalCommits}</span>
-                                <span className="stat-label">Total</span>
-                            </div>
-                            <div className="stat-pill secondary">
-                                <span className="stat-value">{stat.maxCommits}</span>
-                                <span className="stat-label">Peak</span>
-                                <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>
-                            </div>
-                            <div className="stat-pill success">
-                                <span className="stat-value">{stat.maxConsecutiveDays}</span>
-                                <span className="stat-label">Streak</span>
-                            </div>
-                        </div>
-
-                        {expandedCards.has(stat.name) && (
-                            <div className="card-details">
-                                {stat.description && (
-                                    <div className="detail-item">
-                                        <span className="detail-label">Description</span>
-                                        <span className="detail-value">{stat.description}</span>
+                                    <div className="card-stats">
+                                        <div className="stat-pill primary">
+                                            <span className="stat-value">{stat.totalCommits}</span>
+                                            <span className="stat-label">Total</span>
+                                        </div>
+                                        <div className="stat-pill secondary">
+                                            <span className="stat-value">{stat.maxCommits}</span>
+                                            <span className="stat-label">Peak</span>
+                                            <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>
+                                        </div>
+                                        <div className="stat-pill success">
+                                            <span className="stat-value">{stat.maxConsecutiveDays}</span>
+                                            <span className="stat-label">Streak</span>
+                                        </div>
                                     </div>
-                                )}
-                                {stat.lastCommitDate && (
-                                    <div className="detail-item">
-                                        <span className="detail-label">Last Commit</span>
-                                        <span className="detail-value">{formatDate(stat.lastCommitDate)}</span>
-                                    </div>
-                                )}
-                                <div className="activity-meter">
-                                    <div className="meter-bar">
-                                        <div
-                                            className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
-                                            style={{
-                                                width: `${Math.min((stat.totalCommits + stat.maxConsecutiveDays * 2) / 70 * 100, 100)}%`
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
-                        <div className="card-footer">
-                            <div className="commit-trend">
-                                <span className="trend-label">Recent Activity</span>
-                                <div className="trend-sparkline">
-                                    <div className="sparkline-bar" style={{ height: '60%' }}></div>
-                                    <div className="sparkline-bar" style={{ height: '80%' }}></div>
-                                    <div className="sparkline-bar" style={{ height: '45%' }}></div>
-                                    <div className="sparkline-bar" style={{ height: '90%' }}></div>
-                                    <div className="sparkline-bar" style={{ height: '70%' }}></div>
-                                    <div className="sparkline-bar" style={{ height: '85%' }}></div>
-                                    <div className="sparkline-bar" style={{ height: '55%' }}></div>
-                                </div>
+                                    {expandedCards.has(stat.name) && (
+                                        <div className="card-details">
+                                            {stat.description && (
+                                                <div className="detail-item">
+                                                    <span className="detail-label">Description</span>
+                                                    <span className="detail-value">{stat.description}</span>
+                                                </div>
+                                            )}
+                                            {stat.lastCommitDate && (
+                                                <div className="detail-item">
+                                                    <span className="detail-label">Last Commit</span>
+                                                    <span className="detail-value">{formatDate(stat.lastCommitDate)}</span>
+                                                </div>
+                                            )}
+                                            <div className="activity-meter">
+                                                <div className="meter-bar">
+                                                    <div
+                                                        className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
+                                                        style={{
+                                                            width: `${Math.min((stat.totalCommits + stat.maxConsecutiveDays * 2) / 70 * 100, 100)}%`
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
-                                {stat.lastDayCommits !== undefined && (
+                                    <div className="card-footer">
+                                        <div className="commit-trend">
+                                            <span className="trend-label">Recent Activity</span>
+                                            <div className="trend-sparkline">
+                                                <div className="sparkline-bar" style={{ height: '60%' }}></div>
+                                                <div className="sparkline-bar" style={{ height: '80%' }}></div>
+                                                <div className="sparkline-bar" style={{ height: '45%' }}></div>
+                                                <div className="sparkline-bar" style={{ height: '90%' }}></div>
+                                                <div className="sparkline-bar" style={{ height: '70%' }}></div>
+                                                <div className="sparkline-bar" style={{ height: '85%' }}></div>
+                                                <div className="sparkline-bar" style={{ height: '55%' }}></div>
+                                            </div>
+
+                                            {/* {stat.lastDayCommits !== undefined && (
                                     <div className="last-day-commits">
                                         <span className="trend-label">Last Day Commits:</span>{' '}
                                         <span className="trend-value">{stat.lastDayCommits}</span>
                                     </div>
-                                )}
-                            </div>
+                                )} */}
+                                        </div>
 
-                            <button
-                                className="view-repo-btn"
-                                onClick={() =>
-                                    window.open(`https://github.com/${username}/${stat.name}`, '_blank')
-                                }
-                            >
-                                View Repo
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M10 2h4v4l-1-1-3 3-1-1 3-3-1-1zM6 10L3 7l1-1 3 3-1 1z" />
-                                </svg>
-                            </button>
+                                        <button
+                                            className="view-repo-btn"
+                                            onClick={() =>
+                                                window.open(`https://github.com/${username}/${stat.name}`, '_blank')
+                                            }
+                                        >
+                                            View Repo
+                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                <path d="M10 2h4v4l-1-1-3 3-1-1 3-3-1-1zM6 10L3 7l1-1 3 3-1 1z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Show More/Less Controls */}
+                        <div className="show-more-controls" >
+                            {canShowMore && (
+                                <button className="show-more-btn" onClick={showMore}>
+                                    Show More (+3)
+                                </button>
+                            )}
+                            {canShowLess && (
+                                <button className="show-less-btn" onClick={showLess}>
+                                    Show Less
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="stats-footer">
+                            <div className="export-controls">
+                                <button className="export-btn">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" />
+                                    </svg>
+                                    Export Data
+                                </button>
+                            </div>
                         </div>
                     </div>
-                ))}
-            </div>
-
-            {/* Show More/Less Controls */}
-            <div className="show-more-controls">
-                {canShowMore && (
-                    <button className="show-more-btn" onClick={showMore}>
-                        Show More (+3)
-                    </button>
-                )}
-                {canShowLess && (
-                    <button className="show-less-btn" onClick={showLess}>
-                        Show Less
-                    </button>
-                )}
-            </div>
-
-            <div className="stats-footer">
-                <div className="export-controls">
-                    <button className="export-btn">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" />
-                        </svg>
-                        Export Data
-                    </button>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 }

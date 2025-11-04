@@ -29,6 +29,7 @@ export interface RepoStat {
 	stars: number;
 	forks: number;
 	expanded?: boolean;
+	loading: boolean;
 }
 
 export interface InactiveRepo {
