@@ -94,7 +94,9 @@ const processRepoCommits = async (
             const commitDateStr = c.commit?.author?.date;
             if (!commitDateStr) return;
 
+            const commitDate = new Date(commitDateStr);
             const dateStr = new Date(commitDateStr).toISOString().split('T')[0];
+
             const index = dateMap[dateStr];
             if (index !== undefined) {
                 repoDailyCount[index]++;
@@ -194,11 +196,24 @@ export default function Home() {
             const dateMap: Record<string, number> = {};
             const currentDate = new Date(start);
 
+            // Set to UTC to avoid timezone issues
+            currentDate.setUTCHours(0, 0, 0, 0);
+            const endUTC = new Date(end);
+            endUTC.setUTCHours(23, 59, 59, 999);
+
             while (currentDate <= end) {
                 const dateStr = currentDate.toISOString().split('T')[0];
+                const localDate = new Date(currentDate.getTime() + currentDate.getTimezoneOffset() * 60000);
+
+                // Generate label in local time for display, but store UTC date for processing
                 labels.push(
-                    currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })
+                    localDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        weekday: 'short'
+                    })
                 );
+
                 fullDates.push(dateStr);
                 dateMap[dateStr] = labels.length - 1;
                 currentDate.setDate(currentDate.getDate() + 1);
