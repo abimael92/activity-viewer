@@ -15,8 +15,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
     const [visibleCount, setVisibleCount] = useState<number>(6);
 
-    console.log('this are the stats: ', stats);
-
+    console.log('this are allthe stats: ', stats);
 
     const [now] = useState(() => Date.now());
 
@@ -54,7 +53,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
         return `${Math.floor(diffDays / 365)} years`;
     };
 
-
     const getActivityLevel = (totalCommits: number, streak: number) => {
         const score = totalCommits + streak * 2;
         if (score > 50) return 'very-high';
@@ -67,6 +65,27 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
         date
             ? new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
             : 'N/A';
+
+    const formatDateTime = (date: string | null) =>
+        date
+            ? new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : 'N/A';
+
+    // Get recent commits from the last day
+    const getRecentCommits = (stat: RepoStat) => {
+        console.log('this is the statss: ', stat);
+
+        if (!stat.lastDayCommits || !Array.isArray(stat.lastDayCommits)) return [];
+
+        // Return all commits, no date filtering
+        return stat.lastDayCommits;
+    };
 
     const sortedStats = [...stats].sort((a, b) => {
         switch (sortBy) {
@@ -231,9 +250,37 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                             {stat.lastCommitDate && (
                                                 <div className="detail-item">
                                                     <span className="detail-label">Last Commit</span>
-                                                    <span className="detail-value">{formatDate(stat.lastCommitDate)}</span>
+                                                    <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
                                                 </div>
                                             )}
+
+                                            {/* Recent Activity Section */}
+                                            <div className="recent-activity-section">
+                                                <h5 className="activity-title">Recent Activity</h5>
+                                                {getRecentCommits(stat).length > 0 ? (
+                                                    <div className="commit-list">
+                                                        {getRecentCommits(stat).map((commit, index) => (
+                                                            <div key={index} className="commit-item">
+                                                                <div className="commit-message">
+                                                                    <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
+                                                                    <span className="commit-text">{commit.message}</span>
+                                                                </div>
+                                                                <div className="commit-meta">
+                                                                    <span className="commit-date">{formatDateTime(commit.date)}</span>
+                                                                    {commit.author && (
+                                                                        <span className="commit-author">by {commit.author}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="no-activity">
+                                                        <span className="no-activity-text">No commits in the last 24 hours</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             <div className="activity-meter">
                                                 <div className="meter-bar">
                                                     <div
@@ -259,13 +306,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                 <div className="sparkline-bar" style={{ height: '85%' }}></div>
                                                 <div className="sparkline-bar" style={{ height: '55%' }}></div>
                                             </div>
-
-                                            {/* {stat.lastDayCommits !== undefined && (
-                                    <div className="last-day-commits">
-                                        <span className="trend-label">Last Day Commits:</span>{' '}
-                                        <span className="trend-value">{stat.lastDayCommits}</span>
-                                    </div>
-                                )} */}
                                         </div>
 
                                         <button

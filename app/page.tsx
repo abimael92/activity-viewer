@@ -25,6 +25,18 @@ interface ProcessedRepo {
     stats: RepoStat;
 }
 
+interface CommitData {
+    hash?: string;
+    message: string;
+    date: string;
+    author?: string;
+}
+
+interface ProcessedRepo {
+    repoDailyCount: number[];
+    stats: RepoStat & { lastDayCommits?: CommitData[] };
+}
+
 // Constants outside component
 const COLORS = [
     '#FF0000', // Red
@@ -68,6 +80,7 @@ const processRepoCommits = async (
 ): Promise<ProcessedRepo | null> => {
     let allCommits: GitHubCommit[] = [];
     let page = 1;
+    const lastDayCommits: CommitData[] = [];
 
     try {
         while (page <= 3) {
@@ -81,6 +94,18 @@ const processRepoCommits = async (
             if (commits.length === 0) break;
 
             allCommits = allCommits.concat(commits);
+
+            if (page === 1) { // Only get from first page for recent commits
+                commits.slice(0, 10).forEach((commit: any) => {
+                    lastDayCommits.push({
+                        hash: commit.sha,
+                        message: commit.commit?.message || 'No message',
+                        date: commit.commit?.author?.date || new Date().toISOString(),
+                        author: commit.commit?.author?.name || commit.author?.login
+                    });
+                });
+            }
+
             page++;
         }
 
@@ -138,7 +163,8 @@ const processRepoCommits = async (
                 language: repo.language ?? undefined,
                 stars: repo.stargazers_count,
                 forks: repo.forks_count,
-                loading: false
+                loading: false,
+                lastDayCommits: lastDayCommits.slice(0, 5)
             }
         };
     } catch (error) {

@@ -15,6 +15,13 @@ export interface Commit {
 	};
 }
 
+interface CommitData {
+	hash?: string;
+	message: string;
+	date: string;
+	author?: string;
+}
+
 export interface RepoStat {
 	name: string;
 	maxCommits: number;
@@ -25,11 +32,12 @@ export interface RepoStat {
 	maxConsecutiveDays: number;
 	description: string | null;
 	language?: string;
-	lastCommitDate?: string | null; // Change to Date | null lastDayCommits?: number; 	language: string | null;
+	lastCommitDate?: string | null;
 	stars: number;
 	forks: number;
 	expanded?: boolean;
 	loading: boolean;
+	lastDayCommits?: CommitData[];
 }
 
 export interface InactiveRepo {
