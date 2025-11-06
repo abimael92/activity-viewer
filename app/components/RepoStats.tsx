@@ -13,7 +13,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const [view, setView] = useState<'grid' | 'list'>('grid');
     const [sortBy, setSortBy] = useState<string>('name');
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
-    const [visibleCount, setVisibleCount] = useState<number>(3);
+    const [visibleCount, setVisibleCount] = useState<number>(6);
 
     console.log('this are the stats: ', stats);
 
@@ -27,7 +27,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     };
 
     const showMore = () => {
-        setVisibleCount(prev => Math.min(prev + 3, 10));
+        setVisibleCount(prev => Math.min(prev + 2, 12));
     };
 
     const showLess = () => {
@@ -87,7 +87,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const canShowLess = visibleCount > 3;
 
     return (
-        <div className="repo-stats">
+        <div className="repo-stats-container">
             {/* Add loading state at the beginning */}
             {loading && (
                 <div className="loading">
@@ -177,12 +177,18 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                             <div className="repo-title">
                                                 <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
                                                 <div className="repo-meta">
-                                                    <span>{getRepositoryAge(stat.createdAt)} old</span>
-                                                    <span>{formatDate(stat.createdAt)}</span>
+                                                    <div className="repo-dates">
+                                                        <span>{formatDate(stat.createdAt)}</span>
+                                                        <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                    </div>
                                                     {stat.language && (
                                                         <span
                                                             className="repo-language"
-                                                            style={{ background: `${stat.color}20`, color: stat.color }}
+                                                            style={{
+                                                                background: `${stat.color}20`,
+                                                                color: stat.color,
+                                                                border: `1px solid ${stat.color}`,
+                                                            }}
                                                         >
                                                             {stat.language}
                                                         </span>
