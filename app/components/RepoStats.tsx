@@ -168,7 +168,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                             <div
                                                 className="repo-avatar"
                                                 style={{
-                                                    background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}40)`,
+                                                    background: `linear-gradient(135deg, ${stat.color}50, ${stat.color}40)`,
                                                     borderColor: stat.color
                                                 }}
                                             >
@@ -288,7 +288,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                         <div className="show-more-controls" >
                             {canShowMore && (
                                 <button className="show-more-btn" onClick={showMore}>
-                                    Show More (+3)
+                                    Show More (2)
                                 </button>
                             )}
                             {canShowLess && (
