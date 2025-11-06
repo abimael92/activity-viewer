@@ -628,7 +628,7 @@ font-size: 0.72rem;
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 255, 255, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
 }
@@ -639,17 +639,17 @@ font-size: 0.72rem;
 }
 
 .stat-pill.primary {
-    background: rgba(100, 108, 255, 0.15);
+    background: rgba(100, 108, 255, 0.35);
     border-color: rgba(100, 108, 255, 0.3);
 }
 
 .stat-pill.highlight {
-    background: rgba(255, 167, 38, 0.15);
+    background: rgba(255, 167, 38, 0.35);
     border-color: rgba(255, 167, 38, 0.3);
 }
 
 .stat-pill.success {
-    background: rgba(76, 175, 80, 0.15);
+    background: rgba(76, 175, 80, 0.35);
     border-color: rgba(76, 175, 80, 0.3);
 }
 
