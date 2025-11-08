@@ -282,13 +282,19 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                             </div>
 
                                             <div className="activity-meter">
+                                                <div className="meter-label">Activity Level</div>
                                                 <div className="meter-bar">
                                                     <div
                                                         className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
                                                         style={{
-                                                            width: `${Math.min((stat.totalCommits + stat.maxConsecutiveDays * 2) / 70 * 100, 100)}%`
+                                                            width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
                                                         }}
-                                                    />
+                                                    >
+                                                        {/* Add this span for the text label */}
+                                                        <span className="meter-text">
+                                                            {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
