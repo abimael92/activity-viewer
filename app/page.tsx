@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import Charts from './components/Charts';
 import InactivitySections from './components/InactivitySections';
 import RepoStats from './components/RepoStats';
+import { RepoActivitySection } from './components/RepoActivitySection';
+
+
 import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from '@/lib/github';
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 
@@ -421,15 +424,22 @@ export default function Home() {
                         <p>Loading repository data...</p>
                     </div>
                 )}
+
                 {chartData && (
                     <>
                         <Charts chartData={chartData} daysFilter={parseInt(daysFilter)} username={username} />
-                        <RepoStats
-                            stats={fullYearRepoStats}
-                            username={username}
-                            loading={fullYearLoading}
-                        />
+
                     </>
+                )}
+
+                <RepoActivitySection className="mt-6" />
+
+                {fullYearRepoStats && (
+                    <RepoStats
+                        stats={fullYearRepoStats}
+                        username={username}
+                        loading={fullYearLoading}
+                    />
                 )}
                 {!loading && !chartData && !error && (
                     <div className="empty-state">
