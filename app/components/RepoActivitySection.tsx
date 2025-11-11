@@ -25,7 +25,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
     const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
         try {
-            let allCommits: any[] = [];
+            let allCommits: unknown[] = [];
             let page = 1;
 
             while (page <= 3) {
@@ -65,8 +65,21 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
 
-        const todayStr = today.toISOString();
-        const yesterdayStr = yesterday.toISOString();
+        // Set yesterday to start of day (00:00:00)
+        const yesterdayStart = new Date(yesterday);
+        yesterdayStart.setHours(0, 0, 0, 0);
+
+        // Set yesterday to end of day (23:59:59)
+        const yesterdayEnd = new Date(yesterday);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+
+        // Set today to start of day (00:00:00)
+        const todayStart = new Date(today);
+        todayStart.setHours(0, 0, 0, 0);
+
+        // Set today to end of day (23:59:59)
+        const todayEnd = new Date(today);
+        todayEnd.setHours(23, 59, 59, 999);
 
         setDates({
             today: today.toISOString().split('T')[0],
@@ -91,11 +104,12 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
             // Fetch commit counts for each repo for today and yesterday
             const activityPromises = repos.map(async (repo: any) => {
-                const todayCommits = await fetchRepoCommits(repo.name, todayStr, todayStr);
-                const yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStr, yesterdayStr);
+                const todayCommits = await fetchRepoCommits(repo.name, todayStart.toISOString(), todayEnd.toISOString());
+                const yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
 
                 const change = todayCommits - yesterdayCommits;
                 const trend: 'up' | 'down' | 'same' = change > 0 ? 'up' : change < 0 ? 'down' : 'same';
+
 
                 return {
                     name: repo.name,
@@ -220,6 +234,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 ) : (
                     <div className="empty-state">
                         <p>No repository activity found for the selected period.</p>
+                        <button onClick={fetchRepoActivity}>Retry</button>
                     </div>
                 )}
             </div>
