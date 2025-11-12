@@ -11,7 +11,17 @@ import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from 
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 
 interface GitHubCommit {
-    commit: { author?: { date?: string } };
+    sha: string;
+    commit: {
+        message: string;
+        author: {
+            date: string;
+            name: string;
+        };
+    };
+    author: {
+        login: string;
+    } | null;
 }
 
 interface GitHubRepo {
@@ -35,10 +45,6 @@ interface CommitData {
     author?: string;
 }
 
-interface ProcessedRepo {
-    repoDailyCount: number[];
-    stats: RepoStat & { lastDayCommits?: CommitData[] };
-}
 
 // Constants outside component
 const COLORS = [
@@ -99,12 +105,12 @@ const processRepoCommits = async (
             allCommits = allCommits.concat(commits);
 
             if (page === 1) { // Only get from first page for recent commits
-                commits.slice(0, 10).forEach((commit: any) => {
+                commits.slice(0, 10).forEach((commit: GitHubCommit) => {
                     lastDayCommits.push({
                         hash: commit.sha,
                         message: commit.commit?.message || 'No message',
                         date: commit.commit?.author?.date || new Date().toISOString(),
-                        author: commit.commit?.author?.name || commit.author?.login
+                        author: commit.commit?.author?.name || commit.author?.login || 'Unknown'
                     });
                 });
             }
@@ -432,6 +438,13 @@ export default function Home() {
                     </>
                 )}
 
+                {!loading && !chartData && !error && (
+                    <div className="empty-state">
+                        <h3>No data loaded</h3>
+                        <p>Enter a GitHub username and click Load Activity to see repository statistics.</p>
+                    </div>
+                )}
+
                 <RepoActivitySection className="mt-6" />
 
                 {fullYearRepoStats && (
@@ -441,12 +454,7 @@ export default function Home() {
                         loading={fullYearLoading}
                     />
                 )}
-                {!loading && !chartData && !error && (
-                    <div className="empty-state">
-                        <h3>No data loaded</h3>
-                        <p>Enter a GitHub username and click Load Activity to see repository statistics.</p>
-                    </div>
-                )}
+
             </main>
 
             {inactivityData && (
