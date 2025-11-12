@@ -178,157 +178,294 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                             </div>
                         </div>
 
-                        <div className={`stats-grid grid grid-cols-1 sm:grid-cols-2 gap-6`}>
+                        {view === 'grid' ? (
 
-                            {visibleStats.map((stat) => (
-                                <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
-                                    <div className="card-header">
-                                        <div className="repo-main-info">
-                                            <div
-                                                className="repo-avatar"
-                                                style={{
-                                                    background: `linear-gradient(135deg, ${stat.color}50, ${stat.color}40)`,
-                                                    borderColor: stat.color
-                                                }}
+                            <div className={`stats-grid grid grid-cols-1 sm:grid-cols-2 gap-6`}>
+
+                                {visibleStats.map((stat) => (
+                                    <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
+                                        <div className="card-header">
+                                            <div className="repo-main-info">
+                                                <div
+                                                    className="repo-avatar"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${stat.color}50, ${stat.color}40)`,
+                                                        borderColor: stat.color
+                                                    }}
+                                                >
+                                                    <span style={{ color: stat.color }}>{getRepoInitials(stat.name)}</span>
+                                                </div>
+                                                <div className="repo-title">
+                                                    <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
+                                                    <div className="repo-meta">
+                                                        <div className="repo-dates">
+                                                            <span>{formatDate(stat.createdAt)}</span>
+                                                            <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                        </div>
+                                                        {stat.language && (
+                                                            <span
+                                                                className="repo-language"
+                                                                style={{
+                                                                    background: `${stat.color}20`,
+                                                                    color: stat.color,
+                                                                    border: `1px solid ${stat.color}`,
+                                                                }}
+                                                            >
+                                                                {stat.language}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="expand-btn"
+                                                onClick={() => toggleExpand(stat.name)}
                                             >
-                                                <span style={{ color: stat.color }}>{getRepoInitials(stat.name)}</span>
+                                                {expandedCards.has(stat.name) ? '−' : '+'}
+                                            </button>
+                                        </div>
+
+                                        <div className="card-stats">
+                                            <div className="stat-pill primary">
+                                                <span className="stat-value">{stat.totalCommits}</span>
+                                                <span className="stat-label">Total</span>
                                             </div>
-                                            <div className="repo-title">
-                                                <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
-                                                <div className="repo-meta">
-                                                    <div className="repo-dates">
-                                                        <span>{formatDate(stat.createdAt)}</span>
-                                                        <span>{getRepositoryAge(stat.createdAt)} old</span>
-                                                    </div>
-                                                    {stat.language && (
-                                                        <span
-                                                            className="repo-language"
-                                                            style={{
-                                                                background: `${stat.color}20`,
-                                                                color: stat.color,
-                                                                border: `1px solid ${stat.color}`,
-                                                            }}
-                                                        >
-                                                            {stat.language}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                            <div className="stat-pill secondary">
+                                                <span className="stat-value">{stat.maxCommits}</span>
+                                                <span className="stat-label">Peak</span>
+                                                <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>
+                                            </div>
+                                            <div className="stat-pill success">
+                                                <span className="stat-value">{stat.maxConsecutiveDays}</span>
+                                                <span className="stat-label">Streak</span>
                                             </div>
                                         </div>
-                                        <button
-                                            className="expand-btn"
-                                            onClick={() => toggleExpand(stat.name)}
-                                        >
-                                            {expandedCards.has(stat.name) ? '−' : '+'}
-                                        </button>
-                                    </div>
 
-                                    <div className="card-stats">
-                                        <div className="stat-pill primary">
-                                            <span className="stat-value">{stat.totalCommits}</span>
-                                            <span className="stat-label">Total</span>
-                                        </div>
-                                        <div className="stat-pill secondary">
-                                            <span className="stat-value">{stat.maxCommits}</span>
-                                            <span className="stat-label">Peak</span>
-                                            <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>
-                                        </div>
-                                        <div className="stat-pill success">
-                                            <span className="stat-value">{stat.maxConsecutiveDays}</span>
-                                            <span className="stat-label">Streak</span>
-                                        </div>
-                                    </div>
-
-                                    {expandedCards.has(stat.name) && (
-                                        <div className="card-details">
-                                            {stat.description && (
-                                                <div className="detail-item">
-                                                    <span className="detail-label">Description</span>
-                                                    <span className="detail-value">{stat.description}</span>
-                                                </div>
-                                            )}
-                                            {stat.lastCommitDate && (
-                                                <div className="detail-item">
-                                                    <span className="detail-label">Last Commit</span>
-                                                    <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Recent Activity Section */}
-                                            <div className="recent-activity-section">
-                                                <h5 className="activity-title">Recent Activity</h5>
-                                                {getRecentCommits(stat).length > 0 ? (
-                                                    <div className="commit-list">
-                                                        {getRecentCommits(stat).map((commit, index) => (
-                                                            <div key={index} className="commit-item">
-                                                                <div className="commit-message">
-                                                                    <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
-                                                                    <span className="commit-text">{commit.message}</span>
-                                                                </div>
-                                                                <div className="commit-meta">
-                                                                    <span className="commit-date">{formatDateTime(commit.date)}</span>
-                                                                    {commit.author && (
-                                                                        <span className="commit-author">by {commit.author}</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="no-activity">
-                                                        <span className="no-activity-text">No commits in the last 24 hours</span>
+                                        {expandedCards.has(stat.name) && (
+                                            <div className="card-details">
+                                                {stat.description && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Description</span>
+                                                        <span className="detail-value">{stat.description}</span>
                                                     </div>
                                                 )}
-                                            </div>
+                                                {stat.lastCommitDate && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Last Commit</span>
+                                                        <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
+                                                    </div>
+                                                )}
 
-                                            <div className="activity-meter">
-                                                <div className="meter-label">Activity Level</div>
-                                                <div className="meter-bar">
-                                                    <div
-                                                        className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
-                                                        style={{
-                                                            width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
-                                                        }}
-                                                    >
-                                                        {/* Add this span for the text label */}
-                                                        <span className="meter-text">
-                                                            {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
-                                                        </span>
+                                                {/* Recent Activity Section */}
+                                                <div className="recent-activity-section">
+                                                    <h5 className="activity-title">Recent Activity</h5>
+                                                    {getRecentCommits(stat).length > 0 ? (
+                                                        <div className="commit-list">
+                                                            {getRecentCommits(stat).map((commit, index) => (
+                                                                <div key={index} className="commit-item">
+                                                                    <div className="commit-message">
+                                                                        <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
+                                                                        <span className="commit-text">{commit.message}</span>
+                                                                    </div>
+                                                                    <div className="commit-meta">
+                                                                        <span className="commit-date">{formatDateTime(commit.date)}</span>
+                                                                        {commit.author && (
+                                                                            <span className="commit-author">by {commit.author}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="no-activity">
+                                                            <span className="no-activity-text">No commits in the last 24 hours</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="activity-meter">
+                                                    <div className="meter-label">Activity Level</div>
+                                                    <div className="meter-bar">
+                                                        <div
+                                                            className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
+                                                            style={{
+                                                                width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
+                                                            }}
+                                                        >
+                                                            {/* Add this span for the text label */}
+                                                            <span className="meter-text">
+                                                                {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    <div className="card-footer">
-                                        <div className="commit-trend">
-                                            <span className="trend-label">Recent Activity</span>
-                                            <div className="trend-sparkline">
-                                                <div className="sparkline-bar" style={{ height: '60%' }}></div>
-                                                <div className="sparkline-bar" style={{ height: '80%' }}></div>
-                                                <div className="sparkline-bar" style={{ height: '45%' }}></div>
-                                                <div className="sparkline-bar" style={{ height: '90%' }}></div>
-                                                <div className="sparkline-bar" style={{ height: '70%' }}></div>
-                                                <div className="sparkline-bar" style={{ height: '85%' }}></div>
-                                                <div className="sparkline-bar" style={{ height: '55%' }}></div>
+                                        <div className="card-footer">
+                                            <div className="commit-trend">
+                                                <span className="trend-label">Recent Activity</span>
+                                                <div className="trend-sparkline">
+                                                    <div className="sparkline-bar" style={{ height: '60%' }}></div>
+                                                    <div className="sparkline-bar" style={{ height: '80%' }}></div>
+                                                    <div className="sparkline-bar" style={{ height: '45%' }}></div>
+                                                    <div className="sparkline-bar" style={{ height: '90%' }}></div>
+                                                    <div className="sparkline-bar" style={{ height: '70%' }}></div>
+                                                    <div className="sparkline-bar" style={{ height: '85%' }}></div>
+                                                    <div className="sparkline-bar" style={{ height: '55%' }}></div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                className="view-repo-btn"
+                                                onClick={() =>
+                                                    window.open(`https://github.com/${username}/${stat.name}`, '_blank')
+                                                }
+                                            >
+                                                View Repo
+                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                    <path d="M10 2h4v4l-1-1-3 3-1-1 3-3-1-1zM6 10L3 7l1-1 3 3-1 1z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                        ) : (
+
+                            <div className="stats-list">
+                                {visibleStats.map((stat) => (
+                                    <div key={stat.name} className={`stat-list-item ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
+                                        <div className="list-item-main">
+                                            <div className="list-repo-info">
+                                                <div
+                                                    className="repo-avatar"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${stat.color}50, ${stat.color}40)`,
+                                                        borderColor: stat.color
+                                                    }}
+                                                >
+                                                    <span style={{ color: stat.color }}>{getRepoInitials(stat.name)}</span>
+                                                </div>
+                                                <div className="list-repo-details">
+                                                    <h4 className="repo-name" style={{ color: stat.color }}>{stat.name}</h4>
+                                                    <div className="list-repo-meta">
+                                                        <span>{formatDate(stat.createdAt)}</span>
+                                                        <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                        {stat.language && (
+                                                            <span
+                                                                className="repo-language"
+                                                                style={{
+                                                                    background: `${stat.color}20`,
+                                                                    color: stat.color,
+                                                                    border: `1px solid ${stat.color}`,
+                                                                }}
+                                                            >
+                                                                {stat.language}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="list-stats">
+                                                <div className="list-stat">
+                                                    <span className="list-stat-value">{stat.totalCommits}</span>
+                                                    <span className="list-stat-label">Commits</span>
+                                                </div>
+                                                <div className="list-stat">
+                                                    <span className="list-stat-value">{stat.maxConsecutiveDays}</span>
+                                                    <span className="list-stat-label">Streak</span>
+                                                </div>
+                                                <div className="list-stat">
+                                                    <span className="list-stat-value">{stat.maxCommits}</span>
+                                                    <span className="list-stat-label">Peak</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="list-actions">
+                                                <button
+                                                    className="expand-btn"
+                                                    onClick={() => toggleExpand(stat.name)}
+                                                >
+                                                    {expandedCards.has(stat.name) ? '−' : '+'}
+                                                </button>
+                                                <button
+                                                    className="view-repo-btn"
+                                                    onClick={() =>
+                                                        window.open(`https://github.com/${username}/${stat.name}`, '_blank')
+                                                    }
+                                                >
+                                                    View
+                                                </button>
                                             </div>
                                         </div>
 
-                                        <button
-                                            className="view-repo-btn"
-                                            onClick={() =>
-                                                window.open(`https://github.com/${username}/${stat.name}`, '_blank')
-                                            }
-                                        >
-                                            View Repo
-                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                                <path d="M10 2h4v4l-1-1-3 3-1-1 3-3-1-1zM6 10L3 7l1-1 3 3-1 1z" />
-                                            </svg>
-                                        </button>
+                                        {expandedCards.has(stat.name) && (
+                                            <div className="list-item-details">
+                                                {/* Keep the same expanded content as in grid view */}
+                                                {stat.description && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Description</span>
+                                                        <span className="detail-value">{stat.description}</span>
+                                                    </div>
+                                                )}
+                                                {stat.lastCommitDate && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Last Commit</span>
+                                                        <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Recent Activity Section */}
+                                                <div className="recent-activity-section">
+                                                    <h5 className="activity-title">Recent Activity</h5>
+                                                    {getRecentCommits(stat).length > 0 ? (
+                                                        <div className="commit-list">
+                                                            {getRecentCommits(stat).map((commit, index) => (
+                                                                <div key={index} className="commit-item">
+                                                                    <div className="commit-message">
+                                                                        <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
+                                                                        <span className="commit-text">{commit.message}</span>
+                                                                    </div>
+                                                                    <div className="commit-meta">
+                                                                        <span className="commit-date">{formatDateTime(commit.date)}</span>
+                                                                        {commit.author && (
+                                                                            <span className="commit-author">by {commit.author}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="no-activity">
+                                                            <span className="no-activity-text">No commits in the last 24 hours</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="activity-meter">
+                                                    <div className="meter-label">Activity Level</div>
+                                                    <div className="meter-bar">
+                                                        <div
+                                                            className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
+                                                            style={{
+                                                                width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
+                                                            }}
+                                                        >
+                                                            <span className="meter-text">
+                                                                {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Show More/Less Controls */}
                         <div className="show-more-controls" >
