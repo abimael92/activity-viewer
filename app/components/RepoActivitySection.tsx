@@ -103,7 +103,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             const repos = await reposResponse.json();
 
             // Fetch commit counts for each repo for today and yesterday
-            const activityPromises = repos.map(async (repo: any) => {
+            const activityPromises = repos.map(async (repo: { name: string }) => {
                 const todayCommits = await fetchRepoCommits(repo.name, todayStart.toISOString(), todayEnd.toISOString());
                 const yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
 
@@ -195,9 +195,17 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             {/* Header */}
             <div className="section-header">
                 <h3>Daily Repository Activity</h3>
+
                 <div className="date-range">
-                    {dates.yesterday} vs {dates.today}
+                    <div className="date-value">
+                        {dates.yesterday}
+                    </div>
+                    vs
+                    <div className="date-value">
+                        {dates.today}
+                    </div>
                 </div>
+
             </div>
 
             {/* Activity Grid */}
