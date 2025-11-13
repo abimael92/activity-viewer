@@ -10,7 +10,7 @@ interface RepoStatsProps {
 }
 
 export default function RepoStats({ stats, loading, username }: RepoStatsProps) {
-    const [view, setView] = useState<'grid' | 'list'>('grid');
+    const [view, setView] = useState<'grid' | 'list'>('list');
     const [sortBy, setSortBy] = useState<string>('name');
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
     const [visibleCount, setVisibleCount] = useState<number>(6);
@@ -138,6 +138,17 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                         <div className="stats-controls">
                             <div className="view-toggle">
                                 <button
+                                    className={`view-btn ${view === 'list' ? 'active' : ''}`}
+                                    onClick={() => setView('list')}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <rect x="1" y="1" width="14" height="2" rx="1" />
+                                        <rect x="1" y="7" width="14" height="2" rx="1" />
+                                        <rect x="1" y="13" width="14" height="2" rx="1" />
+                                    </svg>
+                                    List
+                                </button>
+                                <button
                                     className={`view-btn ${view === 'grid' ? 'active' : ''}`}
                                     onClick={() => setView('grid')}
                                 >
@@ -151,17 +162,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                         <rect x="13" y="7" width="2" height="4" rx="1" />
                                     </svg>
                                     Grid
-                                </button>
-                                <button
-                                    className={`view-btn ${view === 'list' ? 'active' : ''}`}
-                                    onClick={() => setView('list')}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <rect x="1" y="1" width="14" height="2" rx="1" />
-                                        <rect x="1" y="7" width="14" height="2" rx="1" />
-                                        <rect x="1" y="13" width="14" height="2" rx="1" />
-                                    </svg>
-                                    List
                                 </button>
                             </div>
                             <div className="sort-controls">
