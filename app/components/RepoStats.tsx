@@ -170,9 +170,9 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
                                 >
+                                    <option value="recent">Sort by Recent</option>
                                     <option value="name">Sort by Name</option>
                                     <option value="commits">Sort by Commits</option>
-                                    <option value="recent">Sort by Recent</option>
                                     <option value="streak">Sort by Streak</option>
                                 </select>
                             </div>
