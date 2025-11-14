@@ -15,10 +15,10 @@
 		"jsx": "react-jsx",
 		"incremental": true,
 		"plugins": [{ "name": "next" }],
-		"baseUrl": ".",
+		// REMOVE THIS: "baseUrl": ".",
 		"paths": {
-			"@/*": ["*"],
-			"@types/*": ["types/*"]
+			"@/*": ["./*"], // Change from "*" to "./*"
+			"@types/*": ["./types/*"] // Change from "types/*" to "./types/*"
 		}
 	},
 	"include": [
