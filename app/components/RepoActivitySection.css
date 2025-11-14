@@ -90,6 +90,7 @@
 /* Column Styles */
 .repo-column {
     font-weight: 500;
+    font-size: large;
     color: #ffffff;
     min-width: 0; /* Allow text truncation */
 }
@@ -136,11 +137,15 @@
 /* Header Column Alignment */
 .activity-header .repo-column {
     padding-left: 0.5rem;
+    font-size: x-large;
+        color: #646cff;
 }
 
 .activity-header .commit-column,
 .activity-header .change-column {
     text-align: center;
+    font-size: x-large;
+    color: #646cff;
 }
 
 /* Footer */
