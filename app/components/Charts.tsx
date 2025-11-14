@@ -95,12 +95,11 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                                 if (!fullDate) return 'Invalid date';
 
                                 try {
-                                    const utcDate = new Date(fullDate + 'T00:00:00Z');
-                                    const localDate = new Date(utcDate.getTime() + utcDate.getTimezoneOffset() * 60000);
+                                    const d = new Date(fullDate + "T12:00:00");
 
-                                    if (isNaN(localDate.getTime())) return 'Invalid date';
+                                    if (isNaN(d.getTime())) return 'Invalid date';
 
-                                    return localDate.toLocaleDateString('en-US', {
+                                    return d.toLocaleDateString('en-US', {
                                         weekday: 'long',
                                         year: 'numeric',
                                         month: 'long',

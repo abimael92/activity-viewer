@@ -237,7 +237,10 @@ export default function Home() {
             endUTC.setUTCHours(23, 59, 59, 999);
 
             while (currentDate <= end) {
-                const dateStr = currentDate.toISOString().split('T')[0];
+                const dateStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .split("T")[0];
+
                 const localDate = new Date(currentDate.getTime() + currentDate.getTimezoneOffset() * 60000);
 
                 // Generate label in local time for display, but store UTC date for processing
