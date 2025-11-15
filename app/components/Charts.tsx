@@ -43,6 +43,12 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                 datasets: chartData.datasets.map(dataset => ({
                     ...dataset,
                     type: 'line' as const,
+                    borderWidth: 2, // Default width
+                    hoverBorderWidth: 4, // Width when hovered
+                    pointBorderWidth: 2,
+                    pointHoverBorderWidth: 4,
+                    pointRadius: 3, // Default point size
+                    pointHoverRadius: 6, // Larger when hovered
                 }))
             },
             options: {
@@ -55,6 +61,15 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                         left: 10,
                         right: 10
                     }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                hover: {
+                    mode: 'index',
+                    intersect: false
                 },
                 plugins: {
                     legend: {
@@ -137,6 +152,7 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                         }
                     }
                 },
+                // Scales moved to root level - fix for structure issue
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -178,14 +194,16 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                         }
                     }
                 },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
-                },
+                // Elements moved to root level - fix for structure issue
                 elements: {
                     line: {
-                        tension: 0.3
+                        tension: 0.3,
+                        borderCapStyle: 'round',
+                        borderJoinStyle: 'round'
+                    },
+                    point: {
+                        hoverBackgroundColor: '#fff',
+                        hoverBorderColor: '#000'
                     }
                 }
             }
