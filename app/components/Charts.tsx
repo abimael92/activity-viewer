@@ -5,7 +5,6 @@ import Chart from 'chart.js/auto';
 import { ChartData } from '@/types';
 import { TooltipItem } from 'chart.js';
 
-
 interface ChartsProps {
     chartData: ChartData;
     username: string;
@@ -43,17 +42,23 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                 datasets: chartData.datasets.map(dataset => ({
                     ...dataset,
                     type: 'line' as const,
-                    borderWidth: 2, // Default width
-                    hoverBorderWidth: 4, // Width when hovered
+                    borderWidth: 2,
+                    hoverBorderWidth: 4,
                     pointBorderWidth: 2,
                     pointHoverBorderWidth: 4,
-                    pointRadius: 3, // Default point size
-                    pointHoverRadius: 6, // Larger when hovered
+                    pointRadius: 3,
+                    pointHoverRadius: 8,
+                    hoverBackgroundColor: dataset.backgroundColor,
+                    hoverBorderColor: dataset.borderColor,
                 }))
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                hover: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 layout: {
                     padding: {
                         top: 30, // Space between legend and chart
@@ -65,10 +70,6 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                 interaction: {
                     mode: 'nearest',
                     axis: 'x',
-                    intersect: false
-                },
-                hover: {
-                    mode: 'index',
                     intersect: false
                 },
                 plugins: {
@@ -150,7 +151,8 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                                 return `Total: ${total} commit${total !== 1 ? 's' : ''}`;
                             }
                         }
-                    }
+                    },
+
                 },
                 // Scales moved to root level - fix for structure issue
                 scales: {
@@ -194,19 +196,39 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                         }
                     }
                 },
-                // Elements moved to root level - fix for structure issue
                 elements: {
                     line: {
-                        tension: 0.3,
-                        borderCapStyle: 'round',
-                        borderJoinStyle: 'round'
-                    },
-                    point: {
-                        hoverBackgroundColor: '#fff',
-                        hoverBorderColor: '#000'
+                        tension: 0.3
                     }
                 }
-            }
+            },
+            plugins: [{
+                id: 'hoverEffect',
+                afterDraw: (chart) => {
+                    const activeElements = chart.getActiveElements();
+
+                    if (activeElements.length > 0) {
+                        const ctx = chart.ctx;
+                        const datasetIndex = activeElements[0].datasetIndex;
+
+                        // Reduce opacity for all datasets except the hovered one
+                        chart.data.datasets.forEach((dataset, index) => {
+                            if (index !== datasetIndex) {
+                                const meta = chart.getDatasetMeta(index);
+                                meta.hidden = true; // Hide other datasets
+                            }
+                        });
+
+                        chart.draw();
+                    } else {
+                        // Reset all when not hovering
+                        chart.data.datasets.forEach((dataset, index) => {
+                            const meta = chart.getDatasetMeta(index);
+                            meta.hidden = false;
+                        });
+                    }
+                }
+            }]
         });
 
         return () => {
