@@ -179,6 +179,15 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         }
     };
 
+    const formatDate = (value: string | Date) => {
+        return new Date(value).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    };
+
+
     if (loading) {
         return (
             <div className={`repo-activity-section ${className}`}>
@@ -198,11 +207,11 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
                 <div className="date-range">
                     <div className="date-value">
-                        {dates.yesterday}
+                        {formatDate(dates.yesterday)}
                     </div>
                     vs
                     <div className="date-value">
-                        {dates.today}
+                        {formatDate(dates.today)}
                     </div>
                 </div>
 
