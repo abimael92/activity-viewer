@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
+import type { Chart as ChartJS, ChartDataset, TooltipItem } from 'chart.js';
 import { ChartData } from '@/types';
-import { TooltipItem } from 'chart.js';
 
 interface ChartsProps {
     chartData: ChartData;
@@ -19,9 +19,18 @@ type TooltipContext = TooltipItem<'line'> & {
 
 type TooltipItems = TooltipContext[];
 
+// Extend Chart dataset type with our mutable custom properties to avoid using `any`
+type MutableDataset = ChartDataset<'line'> & {
+    _originalBorderWidth?: number;
+    _originalPointRadius?: number;
+    pointRadius?: number;
+    pointHoverRadius?: number;
+};
+
 export default function Charts({ chartData, username, daysFilter }: ChartsProps) {
     const chartRef = useRef<HTMLCanvasElement>(null);
-    const chartInstance = useRef<Chart | null>(null);
+    const chartInstance = useRef<ChartJS | null>(null);
+    const [selectedDataset, setSelectedDataset] = useState<number | null>(null);
 
     useEffect(() => {
         if (!chartRef.current || !chartData) return;
@@ -33,6 +42,14 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
 
         const ctx = chartRef.current.getContext('2d');
         if (!ctx) return;
+
+        // Ensure transitions.active conforms to Chart.js TransitionSpec type
+        // Provide a minimal spec to disable default active animation while satisfying types
+        (Chart.defaults.transitions as Record<string, unknown>).active = {
+            animation: false,
+            animations: {}
+        };
+
 
         // Create the chart with proper typing
         chartInstance.current = new Chart(ctx, {
@@ -55,10 +72,19 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+
+                // Required so Chart.js detects click events
+                events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+
+                onClick: (event, elements, chart) => {
+                    console.log("Chart.js onClick fired", event, elements);
+                },
+
                 hover: {
                     mode: 'index',
                     intersect: false,
                 },
+
                 layout: {
                     padding: {
                         top: 30, // Space between legend and chart
@@ -195,40 +221,76 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                             color: 'rgba(255, 255, 255, 0.05)'
                         }
                     }
-                },
-                elements: {
-                    line: {
-                        tension: 0.3
-                    }
                 }
             },
-            plugins: [{
-                id: 'hoverEffect',
-                afterDraw: (chart) => {
-                    const activeElements = chart.getActiveElements();
-
-                    if (activeElements.length > 0) {
-                        const ctx = chart.ctx;
-                        const datasetIndex = activeElements[0].datasetIndex;
-
-                        // Reduce opacity for all datasets except the hovered one
+            plugins: [
+                {
+                    id: "clickHighlight",
+                    beforeDatasetsDraw(chart) {
+                        // This ensures our changes persist between redraws
                         chart.data.datasets.forEach((dataset, index) => {
-                            if (index !== datasetIndex) {
-                                const meta = chart.getDatasetMeta(index);
-                                meta.hidden = true; // Hide other datasets
+                            const meta = chart.getDatasetMeta(index);
+                            if (meta.hidden) return;
+
+                            // Store the original values if not already stored
+                            const d = dataset as MutableDataset;
+                            if (!d._originalBorderWidth) {
+                                if (typeof dataset.borderWidth === 'number') {
+                                    d._originalBorderWidth = dataset.borderWidth;
+                                } else {
+                                    d._originalBorderWidth = undefined;
+                                }
+                                d._originalPointRadius = d.pointRadius;
+                            }
+                        });
+                    }
+                },
+                {
+                    id: "fadeOthersOnClick",
+                    afterEvent(chart, args) {
+                        if (args.event.type !== "click") return;
+
+                        const points = chart.getElementsAtEventForMode(
+                            args.event as unknown as Event,
+                            "nearest",
+                            { intersect: true },
+                            false
+                        );
+
+                        if (!points.length) return;
+
+                        const clickedIndex = points[0].datasetIndex;
+                        const clickedDataset = chart.data.datasets[clickedIndex] as MutableDataset;
+
+                        // Check if this dataset is already highlighted
+                        const isCurrentlyHighlighted = clickedDataset.borderWidth === 4;
+
+                        chart.data.datasets.forEach((dataset, idx) => {
+                            const d = dataset as MutableDataset;
+
+                            if (isCurrentlyHighlighted) {
+                                // Reset all to normal
+                                dataset.borderWidth = 2;
+                                d.pointRadius = 3;
+                                d.pointHoverRadius = 8;
+                            } else {
+                                // Bold clicked, hide others
+                                if (idx === clickedIndex) {
+                                    dataset.borderWidth = 4;
+                                    d.pointRadius = 6;
+                                    d.pointHoverRadius = 10;
+                                } else {
+                                    dataset.borderWidth = 1;
+                                    d.pointRadius = 0;
+                                    d.pointHoverRadius = 0;
+                                }
                             }
                         });
 
-                        chart.draw();
-                    } else {
-                        // Reset all when not hovering
-                        chart.data.datasets.forEach((dataset, index) => {
-                            const meta = chart.getDatasetMeta(index);
-                            meta.hidden = false;
-                        });
+                        chart.update('none');
                     }
                 }
-            }]
+            ]
         });
 
         return () => {
