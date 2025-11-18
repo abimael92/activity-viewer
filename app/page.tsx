@@ -100,6 +100,7 @@ const processRepoCommits = async (
             if (!commitsRes.ok) break;
 
             const commits = await commitsRes.json();
+
             if (commits.length === 0) break;
 
             allCommits = allCommits.concat(commits);
@@ -368,6 +369,8 @@ export default function Home() {
                     (repo: InactiveRepo) => !IGNORED_REPOS.includes(repo.name)
                 ) || [],
             };
+            console.log('filteredData: ', filteredData);
+
             setInactivityData(filteredData);
         } catch (err) {
             console.error('Error loading inactivity sections:', err);
