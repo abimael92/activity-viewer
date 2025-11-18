@@ -133,10 +133,9 @@ export async function loadInactivityData(
 
 		for (const repo of repos) {
 			try {
+				// GET LATEST COMMIT FIRST - FIXED
 				const commitsRes = await fetchWithAuth(
-					`https://api.github.com/repos/${username}/${
-						repo.name
-					}/commits?since=${thirtyDaysAgo.toISOString()}&per_page=100`
+					`https://api.github.com/repos/${username}/${repo.name}/commits?per_page=1`
 				);
 
 				if (commitsRes.status === 409 || commitsRes.status === 404) {
@@ -147,7 +146,7 @@ export async function loadInactivityData(
 								? 'Empty repository'
 								: 'Repository not found',
 						lastCommit: null,
-						daysWithoutCommits: 'N/A', // always string | number
+						daysWithoutCommits: 'N/A',
 					});
 					continue;
 				}
@@ -155,30 +154,14 @@ export async function loadInactivityData(
 				if (!commitsRes.ok) continue;
 
 				const commits = await commitsRes.json();
-				const today = new Date();
 
+				// FIXED LOGIC - GET REAL LAST COMMIT DATE
 				let lastCommitDate: Date | null = null;
-				let hasCommitsInLast21Days = false;
-				let hasCommitsInLast15Days = false;
 				let daysWithoutCommits: number | string = 'N/A';
 
-				if (Array.isArray(commits)) {
-					for (const c of commits) {
-						const commitDateStr = c.commit?.author?.date;
-						if (!commitDateStr) continue;
-
-						const commitDate = new Date(commitDateStr);
-
-						if (commitDate >= twentyOneDaysAgo) hasCommitsInLast21Days = true;
-						if (commitDate >= fifteenDaysAgo) hasCommitsInLast15Days = true;
-
-						if (!lastCommitDate || commitDate > lastCommitDate) {
-							lastCommitDate = commitDate;
-						}
-					}
-				}
-
-				if (lastCommitDate) {
+				if (commits.length > 0 && commits[0]?.commit?.author?.date) {
+					lastCommitDate = new Date(commits[0].commit.author.date);
+					const today = new Date();
 					daysWithoutCommits = Math.floor(
 						(today.getTime() - lastCommitDate.getTime()) / (1000 * 60 * 60 * 24)
 					);
@@ -191,14 +174,18 @@ export async function loadInactivityData(
 					daysWithoutCommits,
 				};
 
-				if ((daysWithoutCommits as number) > 21 || !hasCommitsInLast21Days) {
+				// FIXED CONDITIONS
+				if (
+					daysWithoutCommits === 'N/A' ||
+					(typeof daysWithoutCommits === 'number' && daysWithoutCommits >= 21)
+				) {
 					inactiveRepos.push({
 						...repoData,
 						reason: 'No commits in last 21 days',
 					});
 				} else if (
-					(daysWithoutCommits as number) > 15 &&
-					!hasCommitsInLast15Days
+					typeof daysWithoutCommits === 'number' &&
+					daysWithoutCommits >= 15
 				) {
 					repos15Days.push({
 						...repoData,
