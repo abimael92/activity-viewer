@@ -30,10 +30,21 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
     // Auto-switch to list view on mobile for better UX
     useEffect(() => {
-        if (isMobile && view === 'grid') {
-            setView('list');
-        }
-    }, [isMobile, view]);
+        const checkMobile = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+
+            // Switch to list view if mobile and currently in grid view
+            if (mobile && view === 'grid') {
+                setView('list');
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, [view]);
 
     console.log('this are all the stats: ', stats);
 
@@ -41,7 +52,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
     const toggleExpand = (repoName: string) => {
         const newExpanded = new Set(expandedCards);
-        newExpanded.has(repoName) ? newExpanded.delete(repoName) : newExpanded.add(repoName);
+        newExpanded[newExpanded.has(repoName) ? 'delete' : 'add'](repoName);
         setExpandedCards(newExpanded);
     };
 

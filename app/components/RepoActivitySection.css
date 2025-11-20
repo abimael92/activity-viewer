@@ -179,6 +179,37 @@
     margin: 0 auto 1rem;
 }
 
+/* Add to RepoActivitySection.css for better native tooltips */
+.tooltip-icon, 
+.date-value, 
+.commit-column, 
+.change-column,
+.repo-column {
+    position: relative;
+        cursor: pointer;
+}
+
+.tooltip-icon:hover::after,
+.date-value:hover::after,
+.commit-column:hover::after,
+.change-column:hover::after,
+.repo-column:hover::after {
+    content: attr(title);
+    position: absolute;
+    background: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

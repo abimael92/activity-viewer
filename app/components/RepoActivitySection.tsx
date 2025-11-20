@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import './RepoActivitySection.css';
+import Tooltip from './Tooltip';
+
 
 
 interface RepoActivity {
@@ -203,16 +205,25 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         <div className={`repo-activity-section ${className}`}>
             {/* Header */}
             <div className="section-header">
-                <h3>Daily Repository Activity</h3>
+                <h3>
+                    Daily Repository Activity
+                    <span className="tooltip-icon" title="Compare yesterday's vs today's commit activity across all repositories">
+                        ℹ️
+                    </span>
+                </h3>
 
                 <div className="date-range">
-                    <div className="date-value">
-                        {formatDate(dates.yesterday)}
-                    </div>
+                    <Tooltip content="Full day commit count from midnight to midnight">
+                        <div className="date-value">
+                            {formatDate(dates.yesterday)}
+                        </div>
+                    </Tooltip>
                     vs
-                    <div className="date-value">
-                        {formatDate(dates.today)}
-                    </div>
+                    <Tooltip content="Today's commits so far (updates in real-time)">
+                        <div className="date-value">
+                            {formatDate(dates.today)}
+                        </div>
+                    </Tooltip>
                 </div>
 
             </div>
@@ -221,10 +232,22 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             <div className="activity-grid">
                 {/* Header Row */}
                 <div className="activity-header">
-                    <div className="repo-column">Repository</div>
-                    <div className="commit-column">Yesterday</div>
-                    <div className="commit-column">Today</div>
-                    <div className="change-column">Change</div>
+                    <div className="repo-column"
+                        title="Repository name">
+                        Repository
+                    </div>
+                    <div className="commit-column"
+                        title="Number of commits made yesterday">
+                        Yesterday
+                    </div>
+                    <div className="commit-column"
+                        title="Number of commits made today">
+                        Today
+                    </div>
+                    <div className="change-column"
+                        title="Difference between today and yesterday's commits">
+                        Change
+                    </div>
                 </div>
 
                 {/* Data Rows */}
@@ -243,13 +266,15 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                             <div className="commit-column">
                                 {repo.todayCommits}
                             </div>
-                            <div className={`change-column ${getTrendColor(repo.trend)}`}>
+                            <div className={`change-column ${getTrendColor(repo.trend)}`}
+                                title={`${repo.trend === 'up' ? 'Increased' : repo.trend === 'down' ? 'Decreased' : 'No change'} by ${repo.change} commits compared to yesterday`}>
                                 {getTrendIcon(repo.trend)} {repo.change > 0 ? `${repo.change}` : ''}
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="empty-state">
+                    <div className="empty-state"
+                        title="No commits were made in any repositories during the last 2 days">
                         <p>No repository activity found for the selected period.</p>
                         <button onClick={fetchRepoActivity}>Retry</button>
                     </div>
@@ -258,7 +283,9 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
             {/* Footer */}
             <div className="activity-footer">
-                <p>Updates automatically • Data refreshes hourly</p>
+                <p title="Data is automatically fetched from GitHub API every hour">
+                    Updates automatically • Data refreshes hourly
+                </p>
             </div>
         </div>
     );
