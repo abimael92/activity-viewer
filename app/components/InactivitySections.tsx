@@ -55,10 +55,16 @@ export default function InactivitySections({ data, username }: InactivitySection
                                     <span className="repo-name">{repo.name}</span>
 
                                     <div className="status-info">
-                                        <span className={`days-counter ${getDaysCounterClass(repo?.daysWithoutCommits)}`}>
+                                        <span className="days-counter warning"
+                                            title={`${repo.daysWithoutCommits} days without commits`}>
                                             {repo.daysWithoutCommits} day{repo.daysWithoutCommits !== 1 ? 's' : ''}
                                         </span>
-                                        <span className={`status-indicator ${getStatusClass(repo.reason)}`}></span>
+                                        <div className="tooltip-wrapper">
+                                            <span className={`status-indicator ${getStatusClass(repo.reason)}`}></span>
+                                            <div className="tooltip">
+                                                Status: {repo.reason}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -91,11 +97,17 @@ export default function InactivitySections({ data, username }: InactivitySection
                                     <span className="repo-name">{repo.name}</span>
                                     <div className="status-info">
                                         {repo.daysWithoutCommits !== 'N/A' && (
-                                            <span className="days-counter warning">
-                                                {repo.daysWithoutCommits} day{repo.daysWithoutCommits !== 1 ? 's' : ''}
-                                            </span>
+                                            <div className="tooltip-wrapper">
+                                                <span className={`days-counter ${getDaysCounterClass(repo?.daysWithoutCommits)}`}>
+                                                    {repo.daysWithoutCommits} day{repo.daysWithoutCommits !== 1 ? 's' : ''}
+                                                </span>
+                                                <div className="tooltip">
+                                                    {repo.daysWithoutCommits} days without commits
+                                                </div>
+                                            </div>
                                         )}
-                                        <span className="status-indicator warning"></span>
+                                        <span className="status-indicator warning"
+                                            title="Warning: No commits in 15+ days"></span>
                                     </div>
                                 </div>
                                 <div className="repo-status-details">
