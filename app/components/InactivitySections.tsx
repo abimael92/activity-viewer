@@ -68,12 +68,19 @@ export default function InactivitySections({ data, username }: InactivitySection
                                     </div>
                                 </div>
 
-                                <div className="repo-status-details" style={{ marginTop: '8px' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        <span style={{ fontSize: '14px', color: '#e2e8f0' }}>
-                                            Last commit: {formatDate(repo.lastCommit)}
-                                        </span>
-                                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                <div className="repo-status-details">
+                                    <div className="commit-info-container">
+                                        <div className="tooltip-wrapper">
+                                            <span className="commit-date">
+                                                Last commit: {formatDate(repo.lastCommit)}
+                                            </span>
+                                            <div className="tooltip">
+                                                <div>Commit Date: {formatDate(repo.lastCommit)}</div>
+                                                <div>Days since: {repo.daysWithoutCommits} days</div>
+                                                <div>Branch: main</div>
+                                            </div>
+                                        </div>
+                                        <span className="days-ago">
                                             ({repo.daysWithoutCommits} day{repo.daysWithoutCommits !== 1 ? 's' : ''} ago)
                                         </span>
                                     </div>

@@ -1188,8 +1188,27 @@ body {
 
 .repo-status-details {
   margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
+.commit-info-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.commit-date {
+    font-size: 14px;
+    color: #e2e8f0;
+    cursor: pointer;
+}
+
+.days-ago {
+    font-size: 12px;
+    color: #94a3b8;
+}
 .commit-info {
   display: flex;
   flex-direction: column;
@@ -1334,11 +1353,7 @@ body {
     background: #ec407a;
 }
 
-.repo-status-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
+
 
 .status-reason {
     color: rgba(255, 255, 255, 0.8);
