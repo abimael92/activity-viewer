@@ -218,76 +218,91 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                             <div className={`stats-grid ${isMobile ? 'mobile-grid' : ''}`}>
                                 {visibleStats.map((stat) => (
                                     <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
-                                        <div className="card-header">
-                                            <div className="repo-main-info">
-                                                <div
-                                                    className="repo-avatar"
-                                                    style={{
-                                                        background: `linear-gradient(135deg, ${stat.color}70, ${stat.color}65)`,
-                                                        borderColor: stat.color
-                                                    }}
-                                                >
-                                                    <span
+
+                                        {/* Add tooltip wrapper around the main card content */}
+                                        <div className="tooltip-wrapper">
+                                            <div className="card-header">
+                                                <div className="repo-main-info">
+                                                    <div
+                                                        className="repo-avatar"
                                                         style={{
-                                                            fontSize: '28px',
-                                                            color: stat.color,
-                                                            textShadow: `
+                                                            background: `linear-gradient(135deg, ${stat.color}70, ${stat.color}65)`,
+                                                            borderColor: stat.color
+                                                        }}
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                fontSize: '28px',
+                                                                color: stat.color,
+                                                                textShadow: `
                                                                 -1px -1px 0 black,
                                                                 1px -1px 0 black,
                                                                 -1px  1px 0 black,
                                                                 1px  1px 0 black
                                                                 `
-                                                        }}
-                                                    >
-                                                        {getRepoInitials(stat.name)}
-                                                    </span>
-                                                </div>
-                                                <div className="repo-title">
-                                                    <h4 className="repo-name" style={{ color: stat.color }}>
-                                                        {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
-                                                    </h4>
-                                                    <div className="repo-meta">
-                                                        <div className="repo-dates">
-                                                            <span>{formatDate(stat.createdAt)}</span>
-                                                            <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                            }}
+                                                        >
+                                                            {getRepoInitials(stat.name)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="repo-title">
+                                                        <h4 className="repo-name" style={{ color: stat.color }}>
+                                                            {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
+                                                        </h4>
+                                                        <div className="repo-meta">
+                                                            <div className="repo-dates">
+                                                                <span>{formatDate(stat.createdAt)}</span>
+                                                                <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                            </div>
+                                                            {stat.language && (
+                                                                <span
+                                                                    className="repo-language"
+                                                                    style={{
+                                                                        background: `linear-gradient(135deg, ${stat.color}15, ${stat.color}35)`,
+                                                                        color: stat.color,
+                                                                        border: `1px solid ${stat.color}`,
+                                                                    }}
+                                                                >
+                                                                    {stat.language}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        {stat.language && (
-                                                            <span
-                                                                className="repo-language"
-                                                                style={{
-                                                                    background: `linear-gradient(135deg, ${stat.color}15, ${stat.color}35)`,
-                                                                    color: stat.color,
-                                                                    border: `1px solid ${stat.color}`,
-                                                                }}
-                                                            >
-                                                                {stat.language}
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 </div>
+
+                                                <button
+                                                    className={`expand-btn ${expandedCards.has(stat.name) ? 'open' : ''}`}
+                                                    onClick={() => toggleExpand(stat.name)}
+                                                    aria-label={expandedCards.has(stat.name) ? 'Collapse' : 'Expand'}
+                                                >
+                                                    <svg
+                                                        width="18"
+                                                        height="18"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        className="chevron-icon"
+                                                    >
+                                                        <polyline points="6 9 12 15 18 9" />
+                                                    </svg>
+                                                </button>
+
+
                                             </div>
 
-                                            <button
-                                                className={`expand-btn ${expandedCards.has(stat.name) ? 'open' : ''}`}
-                                                onClick={() => toggleExpand(stat.name)}
-                                                aria-label={expandedCards.has(stat.name) ? 'Collapse' : 'Expand'}
-                                            >
-                                                <svg
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    className="chevron-icon"
-                                                >
-                                                    <polyline points="6 9 12 15 18 9" />
-                                                </svg>
-                                            </button>
+                                            {/* Tooltip content */}
+                                            <div className="tooltip">
+                                                <div><strong>{stat.name}</strong></div>
+                                                <div>Created: {formatDate(stat.createdAt)}</div>
+                                                <div>Language: {stat.language || 'Not specified'}</div>
+                                                <div>Total Commits: {stat.totalCommits}</div>
+                                                <div>Best Streak: {stat.maxConsecutiveDays} days</div>
+                                                {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
 
-
+                                            </div>
                                         </div>
 
                                         <div className="card-stats">
@@ -409,179 +424,195 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                             <div className="stats-list">
                                 {visibleStats.map((stat) => (
                                     <div key={stat.name} className={`stat-list-item ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
-                                        <div className="list-item-main">
-                                            <div className="list-repo-info">
-                                                <div
-                                                    className="repo-avatar"
-                                                    style={{
-                                                        background: `linear-gradient(135deg, ${stat.color}70, ${stat.color}65)`,
-                                                        borderColor: stat.color
-                                                    }}
-                                                >
-                                                    <span
+
+                                        {/* Add tooltip wrapper around the main list item content */}
+                                        <div className="tooltip-wrapper">
+                                            <div className="list-item-main">
+                                                <div className="list-repo-info">
+                                                    <div
+                                                        className="repo-avatar"
                                                         style={{
-                                                            fontSize: '24px',
-                                                            color: stat.color,
-                                                            textShadow: `
+                                                            background: `linear-gradient(135deg, ${stat.color}70, ${stat.color}65)`,
+                                                            borderColor: stat.color
+                                                        }}
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                fontSize: '24px',
+                                                                color: stat.color,
+                                                                textShadow: `
                                                                 -2px -2px 0 black,
                                                                 2px -2px 0 black,
                                                                 -2px  2px 0 black,
                                                                 2px  2px 0 black
                                                                 `
-                                                        }}
-                                                    >
-                                                        {getRepoInitials(stat.name)}
-                                                    </span>
-                                                </div>
-                                                <div className="list-repo-details">
-                                                    <h4 className="repo-name" style={{ color: stat.color }}>
-                                                        {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
-                                                    </h4>
-                                                    <div className="list-repo-meta">
-                                                        <span>{formatDate(stat.createdAt)}</span>
-                                                        <span>{getRepositoryAge(stat.createdAt)} old</span>
-                                                        {stat.language && !isMobile && (
-                                                            <span
-                                                                className="repo-language"
-                                                                style={{
-                                                                    background: `${stat.color}20`,
-                                                                    color: stat.color,
-                                                                    border: `1px solid ${stat.color}`,
-                                                                }}
-                                                            >
-                                                                {stat.language}
-                                                            </span>
-                                                        )}
+                                                            }}
+                                                        >
+                                                            {getRepoInitials(stat.name)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="list-repo-details">
+                                                        <h4 className="repo-name" style={{ color: stat.color }}>
+                                                            {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
+                                                        </h4>
+                                                        <div className="list-repo-meta">
+                                                            <span>{formatDate(stat.createdAt)}</span>
+                                                            <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                            {stat.language && !isMobile && (
+                                                                <span
+                                                                    className="repo-language"
+                                                                    style={{
+                                                                        background: `${stat.color}20`,
+                                                                        color: stat.color,
+                                                                        border: `1px solid ${stat.color}`,
+                                                                    }}
+                                                                >
+                                                                    {stat.language}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Top-right expand button */}
-                                            <button
-                                                className={`expand-btn ${expandedCards.has(stat.name) ? 'open' : ''}`}
-                                                onClick={() => toggleExpand(stat.name)}
-                                                aria-label={expandedCards.has(stat.name) ? 'Collapse' : 'Expand'}
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '8px',
-                                                    right: '8px',
-                                                    zIndex: 10
-                                                }}
-                                            >
-                                                <svg
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    className="chevron-icon"
-                                                >
-                                                    <polyline points="6 9 12 15 18 9" />
-                                                </svg>
-                                            </button>
-
-                                            <div className="list-stats">
-                                                <div className="list-stat">
-                                                    <span className="list-stat-value">{stat.totalCommits}</span>
-                                                    <span className="list-stat-label">Commits</span>
-                                                </div>
-                                                {/* {!isMobile && ( */}
-                                                <div className="list-stat">
-                                                    <span className="list-stat-value">{stat.maxConsecutiveDays}</span>
-                                                    <span className="list-stat-label">Streak</span>
-                                                </div>
-                                                {/* )} */}
-                                                <div className="list-stat">
-                                                    <span className="list-stat-value">{stat.maxCommits}</span>
-                                                    <span className="list-stat-label">Peak</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="list-actions">
-
+                                                {/* Top-right expand button */}
                                                 <button
-                                                    className="view-repo-btn"
-                                                    onClick={() =>
-                                                        window.open(`https://github.com/${username}/${stat.name}`, '_blank')
-                                                    }
+                                                    className={`expand-btn ${expandedCards.has(stat.name) ? 'open' : ''}`}
+                                                    onClick={() => toggleExpand(stat.name)}
+                                                    aria-label={expandedCards.has(stat.name) ? 'Collapse' : 'Expand'}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '8px',
+                                                        right: '8px',
+                                                        zIndex: 10
+                                                    }}
                                                 >
-                                                    {isMobile ? 'View' : 'View Repo'}
+                                                    <svg
+                                                        width="18"
+                                                        height="18"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        className="chevron-icon"
+                                                    >
+                                                        <polyline points="6 9 12 15 18 9" />
+                                                    </svg>
                                                 </button>
+
+                                                <div className="list-stats">
+                                                    <div className="list-stat">
+                                                        <span className="list-stat-value">{stat.totalCommits}</span>
+                                                        <span className="list-stat-label">Commits</span>
+                                                    </div>
+                                                    {/* {!isMobile && ( */}
+                                                    <div className="list-stat">
+                                                        <span className="list-stat-value">{stat.maxConsecutiveDays}</span>
+                                                        <span className="list-stat-label">Streak</span>
+                                                    </div>
+                                                    {/* )} */}
+                                                    <div className="list-stat">
+                                                        <span className="list-stat-value">{stat.maxCommits}</span>
+                                                        <span className="list-stat-label">Peak</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="list-actions">
+
+                                                    <button
+                                                        className="view-repo-btn"
+                                                        onClick={() =>
+                                                            window.open(`https://github.com/${username}/${stat.name}`, '_blank')
+                                                        }
+                                                    >
+                                                        {isMobile ? 'View' : 'View Repo'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Tooltip content */}
+                                            <div className="tooltip">
+                                                <div><strong>{stat.name}</strong></div>
+                                                <div>Created: {formatDate(stat.createdAt)}</div>
+                                                <div>Language: {stat.language || 'Not specified'}</div>
+                                                <div>Total Commits: {stat.totalCommits}</div>
+                                                <div>Best Streak: {stat.maxConsecutiveDays} days</div>
+                                                {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
                                             </div>
                                         </div>
 
-                                        {expandedCards.has(stat.name) && (
-                                            <div className="list-item-details">
-                                                {stat.description && (
-                                                    <div className="detail-item">
-                                                        <span className="detail-label">Description</span>
-                                                        <span className="detail-value">
-                                                            {isMobile && stat.description.length > 100
-                                                                ? `${stat.description.substring(0, 100)}...`
-                                                                : stat.description
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {stat.lastCommitDate && (
-                                                    <div className="detail-item">
-                                                        <span className="detail-label">Last Commit</span>
-                                                        <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Recent Activity Section */}
-                                                <div className="recent-activity-section">
-                                                    <h5 className="activity-title">Recent Activity</h5>
-                                                    {getRecentCommits(stat).length > 0 ? (
-                                                        <div className="commit-list">
-                                                            {getRecentCommits(stat).slice(0, isMobile ? 2 : 4).map((commit, index) => (
-                                                                <div key={index} className="commit-item">
-                                                                    <div className="commit-message">
-                                                                        <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
-                                                                        <span className="commit-text">
-                                                                            {isMobile && commit.message.length > 50
-                                                                                ? `${commit.message.substring(0, 50)}...`
-                                                                                : commit.message
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="commit-meta">
-                                                                        <span className="commit-date">{formatDateTime(commit.date)}</span>
-                                                                        {commit.author && !isMobile && (
-                                                                            <span className="commit-author">by {commit.author}</span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="no-activity">
-                                                            <span className="no-activity-text">No recent commits</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="activity-meter">
-                                                    <div className="meter-label">Activity Level</div>
-                                                    <div className="meter-bar">
-                                                        <div
-                                                            className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
-                                                            style={{
-                                                                width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
-                                                            }}
-                                                        >
-                                                            <span className="meter-text">
-                                                                {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                        {
+                                            expandedCards.has(stat.name) && (
+                                                <div className="list-item-details">
+                                                    {stat.description && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Description</span>
+                                                            <span className="detail-value">
+                                                                {isMobile && stat.description.length > 100
+                                                                    ? `${stat.description.substring(0, 100)}...`
+                                                                    : stat.description
+                                                                }
                                                             </span>
                                                         </div>
+                                                    )}
+                                                    {stat.lastCommitDate && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Last Commit</span>
+                                                            <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Recent Activity Section */}
+                                                    <div className="recent-activity-section">
+                                                        <h5 className="activity-title">Recent Activity</h5>
+                                                        {getRecentCommits(stat).length > 0 ? (
+                                                            <div className="commit-list">
+                                                                {getRecentCommits(stat).slice(0, isMobile ? 2 : 4).map((commit, index) => (
+                                                                    <div key={index} className="commit-item">
+                                                                        <div className="commit-message">
+                                                                            <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
+                                                                            <span className="commit-text">
+                                                                                {isMobile && commit.message.length > 50
+                                                                                    ? `${commit.message.substring(0, 50)}...`
+                                                                                    : commit.message
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="commit-meta">
+                                                                            <span className="commit-date">{formatDateTime(commit.date)}</span>
+                                                                            {commit.author && !isMobile && (
+                                                                                <span className="commit-author">by {commit.author}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="no-activity">
+                                                                <span className="no-activity-text">No recent commits</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="activity-meter">
+                                                        <div className="meter-label">Activity Level</div>
+                                                        <div className="meter-bar">
+                                                            <div
+                                                                className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
+                                                                style={{
+                                                                    width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
+                                                                }}
+                                                            >
+                                                                <span className="meter-text">
+                                                                    {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )
+                                        }
                                     </div>
                                 ))}
                             </div>
@@ -615,7 +646,8 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                         </div>
                     </div>
                 </>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }
