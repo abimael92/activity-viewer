@@ -13,6 +13,7 @@ interface RepoActivity {
     todayCommits: number;
     change: number;
     trend: 'up' | 'down' | 'same';
+    extra: Record<string, number>;
 }
 
 interface RepoActivitySectionProps {
@@ -24,6 +25,8 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
     const [activityData, setActivityData] = useState<RepoActivity[]>([]);
     const [loading, setLoading] = useState(true);
     const [dates, setDates] = useState({ today: '', yesterday: '' });
+    const [extraDates, setExtraDates] = useState<string[]>([]);
+
 
     const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
         try {
@@ -112,24 +115,40 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 const change = todayCommits - yesterdayCommits;
                 const trend: 'up' | 'down' | 'same' = change > 0 ? 'up' : change < 0 ? 'down' : 'same';
 
+                // Fetch commit count for each extra date
+                const extra: Record<string, number> = {};
+                const extraDateRanges = getExtraDateRanges();
+
+                for (const range of extraDateRanges) {
+                    const commitCount = await fetchRepoCommits(
+                        repo.name,
+                        range.start,
+                        range.end
+                    );
+                    extra[range.date] = commitCount;
+                }
 
                 return {
                     name: repo.name,
                     yesterdayCommits,
                     todayCommits,
                     change: Math.abs(change),
-                    trend
+                    trend,
+                    extra
                 };
             });
 
+            // After all repos are processed
             const activities = await Promise.all(activityPromises);
 
-            // Filter out repos with no activity in both days and sort by today's activity
+            // Filter & sort
             const filteredActivities = activities
                 .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0)
                 .sort((a, b) => b.todayCommits - a.todayCommits);
 
             setActivityData(filteredActivities);
+
+
         } catch (error) {
             console.error('Error fetching repo activity:', error);
         } finally {
@@ -189,6 +208,16 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         });
     };
 
+    // For each extra date, compute full day range
+    const getExtraDateRanges = () =>
+        extraDates.map(d => {
+            const day = new Date(d);
+            const start = new Date(day); start.setHours(0, 0, 0, 0);
+            const end = new Date(day); end.setHours(23, 59, 59, 999);
+            return { date: d, start: start.toISOString(), end: end.toISOString() };
+        });
+
+
 
     if (loading) {
         return (
@@ -224,8 +253,17 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                             {formatDate(dates.today)}
                         </div>
                     </Tooltip>
-                </div>
 
+                    <button
+                        onClick={() => {
+                            const input = prompt("Enter date (YYYY-MM-DD)");
+                            if (!input) return;
+                            setExtraDates(prev => [...prev, input]);
+                        }}
+                    >
+                        Add Date
+                    </button>
+                </div>
             </div>
 
             {/* Activity Grid */}
@@ -244,10 +282,20 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                         title="Number of commits made today">
                         Today
                     </div>
+
+                    {extraDates.map(d => (
+                        <div key={d} className="commit-column date-header">
+                            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>New date</div>
+                            {d}
+                        </div>
+                    ))}
+
                     <div className="change-column"
                         title="Difference between today and yesterday's commits">
                         Change
                     </div>
+
+
                 </div>
 
                 {/* 
@@ -286,10 +334,22 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                                     title={`${repo.todayCommits} commits`}>
                                     {repo.todayCommits}
                                 </div>
+
+                                {/* In your activity rows */}
+                                {extraDates.map(d => (
+                                    <div key={d} className="commit-column date-column">
+                                        {/* Your data for each new date column */}
+                                        {getCommitCountForDate(d)}
+                                    </div>
+                                ))}
+
                                 <div className={`change-column ${getTrendColor(repo.trend)}`}
                                     title={`${repo.trend === 'up' ? 'Increased' : repo.trend === 'down' ? 'Decreased' : 'No change'} by ${repo.change} commits`}>
                                     {getTrendIcon(repo.trend)} {repo.change > 0 ? `${repo.change}` : ''}
                                 </div>
+
+
+
                             </div>
                         </div>
                     ))
