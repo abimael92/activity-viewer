@@ -22,20 +22,45 @@
 .repo-activity-section .section-header h3 {
     margin: 0;
     color: #ffffff;
-    font-size: 1.3rem;
+    font-size: 1.35rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    line-height: 1;
 }
 
 .repo-activity-section .date-range {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.6);
     display: flex;
     align-items: center;
-    gap: 8px; /* Control spacing between items */
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
 }
+
+.date-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.date-section button {
+    background: #646cff;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.date-section button:hover {
+    background: #4f54d4;
+    transform: translateY(-1px);
+}
+
+
 
 .date-value {
     font-size: 1.2rem;
@@ -48,37 +73,36 @@
     padding: 0;
 }
 
-
-/* Activity Grid - Improved Column Alignment */
+/* Activity Grid - FIXED for dynamic columns */
 .activity-grid {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.activity-header {
+/* Dynamic grid columns */
+.activity-header,
+.activity-row {
     display: grid;
-    grid-template-columns: 1fr 120px 120px 120px;
-    gap: 1rem;
+    grid-template-columns: minmax(200px, 1fr) 100px 100px;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
+    align-items: center;
+}
+
+.activity-header {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.8);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    align-items: center;
 }
 
 .activity-row {
-    display: grid;
-    grid-template-columns: 1fr 120px 120px 120px;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
-    align-items: center;
 }
 
 .activity-row:hover {
@@ -92,7 +116,7 @@
     font-weight: 500;
     font-size: large;
     color: #ffffff;
-    min-width: 0; /* Allow text truncation */
+    min-width: 0;
 }
 
 .repo-name {
@@ -108,7 +132,32 @@
     color: rgba(255, 255, 255, 0.8);
     font-weight: 500;
     font-size: 1rem;
-    min-width: 120px;
+    min-width: 100px;
+}
+
+/* NEW: Styles for extra date columns */
+.commit-column.date-header,
+.commit-column.date-column {
+    min-width: 90px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 400;
+}
+
+.commit-column.date-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.commit-column.date-header div:first-child {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.commit-column.date-column {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .change-column {
@@ -118,7 +167,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
-    min-width: 120px;
+    min-width: 100px;
     font-size: 1rem;
 }
 
@@ -138,14 +187,23 @@
 .activity-header .repo-column {
     padding-left: 0.5rem;
     font-size: x-large;
-        color: #646cff;
+    color: #646cff;
 }
 
-.activity-header .commit-column,
+.activity-header .commit-column:not(.date-header),
 .activity-header .change-column {
     text-align: center;
     font-size: x-large;
     color: #646cff;
+}
+
+/* JavaScript to dynamically update grid columns */
+.activity-header {
+    grid-template-columns: minmax(200px, 1fr) 100px 100px;
+}
+
+.activity-row {
+    grid-template-columns: minmax(200px, 1fr) 100px 100px;
 }
 
 /* Footer */
@@ -177,37 +235,6 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
-}
-
-/* Add to RepoActivitySection.css for better native tooltips */
-.tooltip-icon, 
-.date-value, 
-.commit-column, 
-.change-column,
-.repo-column {
-    position: relative;
-        cursor: pointer;
-}
-
-.tooltip-icon:hover::after,
-.date-value:hover::after,
-.commit-column:hover::after,
-.change-column:hover::after,
-.repo-column:hover::after {
-    content: attr(title);
-    position: absolute;
-    background: #1f2937;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    white-space: nowrap;
-    z-index: 1000;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 8px;
-
 }
 
 @keyframes spin {
@@ -250,7 +277,7 @@
     }
 
     .activity-header {
-        display: none; /* Hide header on mobile */
+        display: none;
     }
 
     .activity-row {

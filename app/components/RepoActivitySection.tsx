@@ -5,14 +5,13 @@ import { useState, useEffect } from 'react';
 import './RepoActivitySection.css';
 import Tooltip from './Tooltip';
 
-
-
 interface RepoActivity {
     name: string;
     yesterdayCommits: number;
     todayCommits: number;
     change: number;
     trend: 'up' | 'down' | 'same';
+    extra: Record<string, number>;
 }
 
 interface RepoActivitySectionProps {
@@ -24,6 +23,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
     const [activityData, setActivityData] = useState<RepoActivity[]>([]);
     const [loading, setLoading] = useState(true);
     const [dates, setDates] = useState({ today: '', yesterday: '' });
+    const [extraDates, setExtraDates] = useState<string[]>([]);
 
     const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
         try {
@@ -57,10 +57,12 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         }
     };
 
-    const fetchRepoActivity = async () => {
+    const fetchRepoActivity = async (refreshExtraDatesOnly = false) => {
         if (!username) return;
 
-        setLoading(true);
+        if (!refreshExtraDatesOnly) {
+            setLoading(true);
+        }
 
         // Calculate dates
         const today = new Date();
@@ -104,36 +106,63 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
             const repos = await reposResponse.json();
 
-            // Fetch commit counts for each repo for today and yesterday
+            // Fetch commit counts for each repo
             const activityPromises = repos.map(async (repo: { name: string }) => {
-                const todayCommits = await fetchRepoCommits(repo.name, todayStart.toISOString(), todayEnd.toISOString());
-                const yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
+                let todayCommits, yesterdayCommits;
+
+                if (!refreshExtraDatesOnly) {
+                    // Only fetch today and yesterday data on initial load
+                    todayCommits = await fetchRepoCommits(repo.name, todayStart.toISOString(), todayEnd.toISOString());
+                    yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
+                } else {
+                    // When refreshing extra dates only, use existing data
+                    const existingRepo = activityData.find(r => r.name === repo.name);
+                    todayCommits = existingRepo?.todayCommits || 0;
+                    yesterdayCommits = existingRepo?.yesterdayCommits || 0;
+                }
 
                 const change = todayCommits - yesterdayCommits;
                 const trend: 'up' | 'down' | 'same' = change > 0 ? 'up' : change < 0 ? 'down' : 'same';
 
+                // Fetch commit count for each extra date
+                const extra: Record<string, number> = {};
+                const extraDateRanges = getExtraDateRanges();
+
+                for (const range of extraDateRanges) {
+                    const commitCount = await fetchRepoCommits(
+                        repo.name,
+                        range.start,
+                        range.end
+                    );
+                    extra[range.date] = commitCount;
+                }
 
                 return {
                     name: repo.name,
                     yesterdayCommits,
                     todayCommits,
                     change: Math.abs(change),
-                    trend
+                    trend,
+                    extra
                 };
             });
 
+            // After all repos are processed
             const activities = await Promise.all(activityPromises);
 
-            // Filter out repos with no activity in both days and sort by today's activity
+            // Filter & sort
             const filteredActivities = activities
-                .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0)
+                .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0 || Object.values(repo.extra).some(count => count > 0))
                 .sort((a, b) => b.todayCommits - a.todayCommits);
 
             setActivityData(filteredActivities);
+
         } catch (error) {
             console.error('Error fetching repo activity:', error);
         } finally {
-            setLoading(false);
+            if (!refreshExtraDatesOnly) {
+                setLoading(false);
+            }
         }
     };
 
@@ -145,29 +174,55 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         return () => clearInterval(interval);
     }, [username]);
 
-    const getTrendIcon = (trend: string) => {
-        const iconStyle = {
-            width: '32',
-            height: '32',
-            display: 'inline-block'
+    // Add this useEffect to refresh extra dates data
+    useEffect(() => {
+        if (extraDates.length > 0 && activityData.length > 0) {
+            // Refresh only extra dates data when new dates are added
+            fetchRepoActivity(true);
+        }
+    }, [extraDates]);
+
+    // Update grid columns when extraDates changes
+    useEffect(() => {
+        const updateGridColumns = () => {
+            const extraColumns = extraDates.length;
+            const gridTemplate = `minmax(200px, 1fr) 100px 100px ${'90px '.repeat(extraColumns)}100px`;
+
+            const activityHeaders = document.querySelectorAll('.activity-header');
+            const activityRows = document.querySelectorAll('.activity-row');
+
+            activityHeaders.forEach(header => {
+                (header as HTMLElement).style.gridTemplateColumns = gridTemplate;
+            });
+
+            activityRows.forEach(row => {
+                (row as HTMLElement).style.gridTemplateColumns = gridTemplate;
+            });
         };
+
+        if (extraDates.length > 0 || activityData.length > 0) {
+            updateGridColumns();
+        }
+    }, [extraDates, activityData]);
+
+    const getTrendIcon = (trend: string) => {
         switch (trend) {
             case 'up':
                 return (
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M7 14l5-5 5 5z" />
                     </svg>
                 );
             case 'down':
                 return (
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M7 10l5 5 5-5z" />
                     </svg>
                 );
             default:
                 return (
-                    <svg style={iconStyle} viewBox="0 0 24 24">
-                        <path d="M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14" />
                     </svg>
                 );
         }
@@ -189,6 +244,18 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         });
     };
 
+    // For each extra date, compute full day range
+    const getExtraDateRanges = () =>
+        extraDates.map(d => {
+            const day = new Date(d);
+            const start = new Date(day); start.setHours(0, 0, 0, 0);
+            const end = new Date(day); end.setHours(23, 59, 59, 999);
+            return { date: d, start: start.toISOString(), end: end.toISOString() };
+        });
+
+    const getCommitCountForDate = (date: string, repo: RepoActivity) => {
+        return repo.extra[date] || 0;
+    };
 
     if (loading) {
         return (
@@ -212,92 +279,90 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                     </span>
                 </h3>
 
-                <div className="date-range">
-                    <Tooltip content="Full day commit count from midnight to midnight">
-                        <div className="date-value">
-                            {formatDate(dates.yesterday)}
-                        </div>
-                    </Tooltip>
-                    vs
-                    <Tooltip content="Today's commits so far (updates in real-time)">
-                        <div className="date-value">
-                            {formatDate(dates.today)}
-                        </div>
-                    </Tooltip>
-                </div>
+                <div className="date-section">
+                    <button
+                        onClick={() => {
+                            const input = prompt("Enter date (YYYY-MM-DD)");
+                            if (!input) return;
+                            setExtraDates(prev => [...prev, input]);
+                        }}
+                    >
+                        Add Date
+                    </button>
 
+                    <div className="date-range">
+                        <Tooltip content="Full day commit count from midnight to midnight">
+                            <div className="date-value">
+                                {formatDate(dates.yesterday)}
+                            </div>
+                        </Tooltip>
+                        vs
+                        <Tooltip content="Today's commits so far (updates in real-time)">
+                            <div className="date-value">
+                                {formatDate(dates.today)}
+                            </div>
+                        </Tooltip>
+                    </div>
+                </div>
             </div>
 
             {/* Activity Grid */}
             <div className="activity-grid">
                 {/* Header Row */}
                 <div className="activity-header">
-                    <div className="repo-column"
-                        title="Repository name">
+                    <div className="repo-column" title="Repository name">
                         Repository
                     </div>
-                    <div className="commit-column"
-                        title="Number of commits made yesterday">
+                    <div className="commit-column" title="Number of commits made yesterday">
                         Yesterday
                     </div>
-                    <div className="commit-column"
-                        title="Number of commits made today">
+                    <div className="commit-column" title="Number of commits made today">
                         Today
                     </div>
-                    <div className="change-column"
-                        title="Difference between today and yesterday's commits">
+
+                    {extraDates.map(d => (
+                        <div key={d} className="commit-column date-header" title={`Commits on ${d}`}>
+                            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Extra Date</div>
+                            <div>{d}</div>
+                        </div>
+                    ))}
+
+                    <div className="change-column" title="Difference between today and yesterday's commits">
                         Change
                     </div>
                 </div>
 
-                {/* 
-                <div className="tooltip-wrapper">
-                    <span className="repo-name">{repo.name}</span>
-                    <div className="tooltip">
-                        <div>Commit Date: {formatDate(repo.lastCommit)}</div>
-                        <div>Days since: {repo.daysWithoutCommits} days</div>
-                        <div>Branch: main</div>
-                    </div>
-                </div> 
-                */}
-
                 {/* Data Rows */}
                 {activityData.length > 0 ? (
                     activityData.map((repo) => (
-                        <div
-                            key={repo.name}
-                            className="activity-row"
-                        >
-                            <div className="activity-row-content">
-                                <div className="tooltip-wrapper">
-                                    <div className="repo-column repo-name">
-                                        {repo.name}
-                                    </div>
-                                    <div className="tooltip">
-                                        <div>{repo.name}</div>
-                                    </div>
-                                </div>
+                        <div key={repo.name} className="activity-row">
+                            <div className="repo-column repo-name" title={repo.name}>
+                                {repo.name}
+                            </div>
+                            <div className="commit-column" title={`${repo.yesterdayCommits} commits`}>
+                                {repo.yesterdayCommits}
+                            </div>
+                            <div className="commit-column" title={`${repo.todayCommits} commits`}>
+                                {repo.todayCommits}
+                            </div>
 
-                                <div className="commit-column"
-                                    title={`${repo.yesterdayCommits} commits`}>
-                                    {repo.yesterdayCommits}
+                            {extraDates.map(d => (
+                                <div key={d} className="commit-column date-column" title={`${getCommitCountForDate(d, repo)} commits on ${d}`}>
+                                    {getCommitCountForDate(d, repo)}
                                 </div>
-                                <div className="commit-column"
-                                    title={`${repo.todayCommits} commits`}>
-                                    {repo.todayCommits}
-                                </div>
-                                <div className={`change-column ${getTrendColor(repo.trend)}`}
-                                    title={`${repo.trend === 'up' ? 'Increased' : repo.trend === 'down' ? 'Decreased' : 'No change'} by ${repo.change} commits`}>
-                                    {getTrendIcon(repo.trend)} {repo.change > 0 ? `${repo.change}` : ''}
-                                </div>
+                            ))}
+
+                            <div className={`change-column ${getTrendColor(repo.trend)}`}
+                                title={`${repo.trend === 'up' ? 'Increased' : repo.trend === 'down' ? 'Decreased' : 'No change'} by ${repo.change} commits`}>
+                                {getTrendIcon(repo.trend)}
+                                {repo.change > 0 ? `${repo.change}` : ''}
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="empty-state"
-                        title="No commits were made in any repositories during the last 2 days">
+                    <div className="empty-state" title="No commits were made in any repositories during the last 2 days">
                         <p>No repository activity found for the selected period.</p>
-                        <button onClick={fetchRepoActivity}>Retry</button>
+                        <button onClick={() => fetchRepoActivity()}>Retry</button>
                     </div>
                 )}
             </div>
