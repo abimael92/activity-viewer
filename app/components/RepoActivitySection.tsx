@@ -278,10 +278,12 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                                     </div>
                                 </div>
 
-                                <div className="commit-column">
+                                <div className="commit-column"
+                                    title={`${repo.yesterdayCommits} commits`}>
                                     {repo.yesterdayCommits}
                                 </div>
-                                <div className="commit-column">
+                                <div className="commit-column"
+                                    title={`${repo.todayCommits} commits`}>
                                     {repo.todayCommits}
                                 </div>
                                 <div className={`change-column ${getTrendColor(repo.trend)}`}
