@@ -1151,6 +1151,7 @@ body {
 .tooltip-wrapper {
   position: relative;
   display: inline-block;
+    display: contents;
 }
 
 .tooltip-wrapper .tooltip {
@@ -1187,6 +1188,9 @@ body {
     box-shadow: 0 4px 12px rgba(100, 108, 255, 0.2);
 }
 
+.activity-row-content {
+  display: contents;
+}
 
 .repo-status-details {
   margin-top: 8px;
