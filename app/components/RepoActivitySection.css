@@ -22,20 +22,39 @@
 .repo-activity-section .section-header h3 {
     margin: 0;
     color: #ffffff;
-    font-size: 1.3rem;
+    font-size: 1.35rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem; /* tighter spacing */
+    line-height: 1; /* aligns tooltip icon vertically */
 }
 
 .repo-activity-section .date-range {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.6);
     display: flex;
     align-items: center;
-    gap: 8px; /* Control spacing between items */
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
 }
+
+.date-range button {
+    background: #646cff;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.date-range button:hover {
+    background: #4f54d4;
+    transform: translateY(-1px);
+}
+
+
 
 .date-value {
     font-size: 1.2rem;
@@ -310,4 +329,46 @@
     .activity-row {
         padding: 0.75rem;
     }
+}
+
+
+/* Add these styles to your existing CSS */
+
+/* New date columns styling */
+.activity-header .commit-column.date-header,
+.commit-column.date-column {
+    min-width: 100px; /* Smaller width for new date columns */
+    font-size: 0.8rem; /* Smaller text size */
+    color: rgba(255, 255, 255, 0.6); /* Lighter color */
+    font-weight: 400; /* Less bold */
+}
+
+/* Main headers keep their original styling */
+.activity-header .commit-column:not(.date-header),
+.commit-column:not(.date-column) {
+    min-width: 120px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Update grid template to accommodate new columns */
+.activity-header,
+.activity-row {
+    grid-template-columns: 1fr 120px 120px repeat(auto-fit, 100px) 120px;
+    gap: 0.75rem; /* Slightly smaller gap for more columns */
+}
+
+/* Ensure the main headers stay prominent */
+.activity-header .repo-column {
+    padding-left: 0.5rem;
+    font-size: x-large;
+    color: #646cff;
+}
+
+.activity-header .commit-column:not(.date-header),
+.activity-header .change-column {
+    text-align: center;
+    font-size: x-large;
+    color: #646cff;
 }
