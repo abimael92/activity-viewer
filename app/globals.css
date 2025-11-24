@@ -564,7 +564,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 200px;
-    /* overflow: visible; */
+    overflow: visible;
 }
 
 @media (min-width: 768px) {
@@ -1778,7 +1778,7 @@ body {
     padding: 1rem;
     transition: all 0.3s ease;
     position: relative;
-    /* overflow: hidden; // AQUI */
+    /* overflow: hidden;  */
 }
 
 .list-item-main {
