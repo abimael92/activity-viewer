@@ -152,7 +152,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
             // Filter & sort
             const filteredActivities = activities
-                .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0 || Object.values(repo.extra).some(count => count > 0))
+                .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0 || Object.values(repo.extra).some((count: unknown) => Number(count) > 0))
                 .sort((a, b) => b.todayCommits - a.todayCommits);
 
             setActivityData(filteredActivities);
