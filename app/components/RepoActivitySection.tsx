@@ -268,16 +268,16 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                             key={repo.name}
                             className="activity-row"
                         >
-
-                            <div className="tooltip-wrapper">
-
-                                <div className="tooltip">
-                                    <div> {repo.name} </div>
+                            <div className="activity-row-content">
+                                <div className="tooltip-wrapper">
+                                    <div className="repo-column repo-name">
+                                        {repo.name}
+                                    </div>
+                                    <div className="tooltip">
+                                        <div>{repo.name}</div>
+                                    </div>
                                 </div>
 
-                                <div className="repo-column repo-name">
-                                    {repo.name}
-                                </div>
                                 <div className="commit-column">
                                     {repo.yesterdayCommits}
                                 </div>
@@ -288,9 +288,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                                     title={`${repo.trend === 'up' ? 'Increased' : repo.trend === 'down' ? 'Decreased' : 'No change'} by ${repo.change} commits`}>
                                     {getTrendIcon(repo.trend)} {repo.change > 0 ? `${repo.change}` : ''}
                                 </div>
-
                             </div>
-
                         </div>
                     ))
                 ) : (
