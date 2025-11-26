@@ -785,32 +785,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                             </div>
                         )}
 
-                        {/* Show More/Less Controls */}
-                        {(canShowMore || canShowLess) && (
-                            <div className="show-more-controls">
-                                {canShowMore && (
-                                    <button className="show-more-btn" onClick={showMore}>
-                                        Show More ({isMobile ? 1 : 2})
-                                    </button>
-                                )}
-                                {canShowLess && (
-                                    <button className="show-less-btn" onClick={showLess}>
-                                        Show Less
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="stats-footer">
-                            <div className="export-controls">
-                                <button className="export-btn">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" />
-                                    </svg>
-                                    {isMobile ? 'Export' : 'Export Data'}
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </>
             )}
