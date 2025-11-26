@@ -319,8 +319,20 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
                     {extraDates.map(d => (
                         <div key={d} className="commit-column date-header" title={`Commits on ${d}`}>
-                            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Extra Date</div>
-                            <div>{d}</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 900, opacity: 0.8, color: '#646cff' }}>Extra Date</div>
+                            <div
+                                style={{
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    background: "linear-gradient(135deg, #646cff, #00d4aa)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                    backgroundClip: "text",
+                                }}
+                            >
+                                {formatDate(d)}
+                            </div>
+
                         </div>
                     ))}
 
