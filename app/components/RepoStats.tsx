@@ -156,6 +156,47 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const canShowMore = visibleCount < stats.length;
     const canShowLess = visibleCount > (isMobile ? 3 : 6);
 
+    const exportData = (format: 'csv' | 'json') => {
+        const exportStats = sortedStats.map(stat => ({
+            Repository: stat.name,
+            Language: stat.language || 'Not specified',
+            'Total Commits': stat.totalCommits,
+            'Best Streak': stat.maxConsecutiveDays,
+            'Peak Commits': stat.maxCommits,
+            'Peak Date': stat.maxCommitsDate ? formatDate(stat.maxCommitsDate) : 'N/A',
+            'Last Commit': stat.lastCommitDate ? formatDateTime(stat.lastCommitDate) : 'N/A',
+            'Created Date': formatDate(stat.createdAt),
+            'Repository Age': getRepositoryAge(stat.createdAt),
+            Description: stat.description || 'No description'
+        }));
+
+        if (format === 'csv') {
+            // CSV Export
+            const headers = Object.keys(exportStats[0]).join(',');
+            const rows = exportStats.map(stat => Object.values(stat).map(value =>
+                `"${String(value).replace(/"/g, '""')}"`
+            ).join(','));
+            const csv = [headers, ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Repositories_Insights-${new Date().toISOString().split('T')[0].split('-').reverse().join('-')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else if (format === 'json') {
+            // JSON Export
+            const json = JSON.stringify(exportStats, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Repositories_Insights-${new Date().toISOString().split('T')[0].split('-').reverse().join('-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    };
+
     return (
         <div className="repo-stats-container">
             {/* Add loading state at the beginning */}
@@ -774,43 +815,36 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                 <div className="stats-footer">
                                     <div className="export-controls">
-                                        <button className="export-btn">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                                <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" />
+                                        <button
+                                            className="export-btn"
+                                            onClick={() => exportData('csv')}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                <polyline points="14,2 14,8 20,8" />
+                                                <path d="M16 13H8" />
+                                                <path d="M16 17H8" />
+                                                <polyline points="10,9 9,9 8,9" />
                                             </svg>
-                                            {isMobile ? 'Export' : 'Export Data'}
+                                            {isMobile ? 'CSV' : 'Export CSV'}
+                                        </button>
+                                        <button
+                                            className="export-btn"
+                                            onClick={() => exportData('json')}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+                                                <path d="M18 14h-8" />
+                                                <path d="M15 18h-5" />
+                                                <path d="M10 6h8v4h-8z" />
+                                            </svg>
+                                            {isMobile ? 'JSON' : 'Export JSON'}
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Show More/Less Controls */}
-                        {(canShowMore || canShowLess) && (
-                            <div className="show-more-controls">
-                                {canShowMore && (
-                                    <button className="show-more-btn" onClick={showMore}>
-                                        Show More ({isMobile ? 1 : 2})
-                                    </button>
-                                )}
-                                {canShowLess && (
-                                    <button className="show-less-btn" onClick={showLess}>
-                                        Show Less
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="stats-footer">
-                            <div className="export-controls">
-                                <button className="export-btn">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" />
-                                    </svg>
-                                    {isMobile ? 'Export' : 'Export Data'}
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </>
             )}
