@@ -1,344 +1,259 @@
-/* components/RepoActivitySection.css */
+/* =========================================================
+   Repo Activity Section Container
+   ========================================================= */
 .repo-activity-section {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin: 2rem auto;
-    max-width: 1000px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2rem auto;
+  max-width: 1000px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
+/* Header */
 .repo-activity-section .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .repo-activity-section .section-header h3 {
-    margin: 0;
-    color: #ffffff;
-    font-size: 1.35rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    line-height: 1;
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1;
 }
 
 .repo-activity-section .date-range {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
 }
 
 .date-section {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .date-section button {
-    background: #646cff;
-    border: none;
-    color: white;
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.2s ease;
+  background: #646cff;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .date-section button:hover {
-    background: #4f54d4;
-    transform: translateY(-1px);
+  background: #4f54d4;
+  transform: translateY(-1px);
 }
-
-
 
 .date-value {
-    font-size: 1.2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #646cff, #00d4aa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0;
-    padding: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #646cff, #00d4aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  padding: 0;
 }
 
-/* Activity Grid - FIXED for dynamic columns */
+/* =========================================================
+   Activity Grid Layout
+   ========================================================= */
 .activity-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-/* Dynamic grid columns */
 .activity-header,
 .activity-row {
-    display: grid;
-    grid-template-columns: minmax(200px, 1fr) 100px 100px;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    align-items: center;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 100px 100px;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  align-items: center;
 }
 
+/* Header row */
 .activity-header {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Data rows */
 .activity-row {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
 }
 
 .activity-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
-/* Column Styles */
+/* =========================================================
+   Column Styles
+   ========================================================= */
 .repo-column {
-    font-weight: 500;
-    font-size: large;
-    color: #ffffff;
-    min-width: 0;
+  font-weight: 500;
+  font-size: large;
+  color: #ffffff;
+  min-width: 0;
 }
 
 .repo-name {
-    font-weight: 600;
-    color: #ffffff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .commit-column {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
-    font-size: 1rem;
-    min-width: 100px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  font-size: 1rem;
+  min-width: 100px;
 }
 
-/* NEW: Styles for extra date columns */
+/* Dynamic date columns */
 .commit-column.date-header,
 .commit-column.date-column {
-    min-width: 90px;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    font-weight: 400;
+  min-width: 90px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
 }
 
 .commit-column.date-header {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .commit-column.date-header div:first-child {
-    font-size: 0.7rem;
-    opacity: 0.8;
+  font-size: 0.7rem;
+  opacity: 0.8;
 }
 
 .commit-column.date-column {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .change-column {
-    text-align: center;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    min-width: 100px;
-    font-size: 1rem;
+  text-align: center;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 100px;
+  font-size: 1rem;
 }
 
-.trend-up {
-    color: #4caf50;
-}
+/* Trend Colors */
+.trend-up { color: #4caf50; }
+.trend-down { color: #ff6b6b; }
+.trend-same { color: rgba(255, 255, 255, 0.6); }
 
-.trend-down {
-    color: #ff6b6b;
-}
-
-.trend-same {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* Header Column Alignment */
+/* Header alignment colors */
 .activity-header .repo-column {
-    padding-left: 0.5rem;
-    font-size: x-large;
-    color: #646cff;
+  padding-left: 0.5rem;
+  font-size: x-large;
+  color: #646cff;
 }
 
 .activity-header .commit-column:not(.date-header),
 .activity-header .change-column {
-    text-align: center;
-    font-size: x-large;
-    color: #646cff;
+  text-align: center;
+  font-size: x-large;
+  color: #646cff;
 }
 
-/* JavaScript to dynamically update grid columns */
-.activity-header {
-    grid-template-columns: minmax(200px, 1fr) 100px 100px;
-}
-
-.activity-row {
-    grid-template-columns: minmax(200px, 1fr) 100px 100px;
-}
-
-/* Footer */
+/* =========================================================
+   Footer
+   ========================================================= */
 .activity-footer {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
 }
 
 .activity-footer p {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
 }
 
-/* Loading States */
+/* =========================================================
+   Loading State
+   ========================================================= */
 .repo-activity-section .loading {
-    text-align: center;
-    padding: 3rem;
-    color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .repo-activity-section .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-left: 3px solid #646cff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-left: 3px solid #646cff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.repo-activity-section .loading p {
-    font-size: 1.1rem;
-    margin: 0;
-}
-
-/* Empty States */
+/* =========================================================
+   Empty State
+   ========================================================= */
 .repo-activity-section .empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: rgba(255, 255, 255, 0.6);
-    grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.6);
+  grid-column: 1 / -1;
 }
 
 .repo-activity-section .empty-state p {
-    margin: 0;
-    font-size: 1rem;
+  margin: 0;
+  font-size: 1rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .repo-activity-section {
-        padding: 1rem;
-        margin: 1rem auto;
-        border-radius: 12px;
-    }
-
-    .activity-header,
-    .activity-row {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto;
-        gap: 0.5rem;
-        text-align: left;
-    }
-
-    .activity-header {
-        display: none;
-    }
-
-    .activity-row {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-        padding: 1rem;
-    }
-
-    .repo-column,
-    .commit-column,
-    .change-column {
-        text-align: left;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .repo-column::before {
-        content: "Repository:";
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .commit-column:nth-child(2)::before {
-        content: "Yesterday:";
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .commit-column:nth-child(3)::before {
-        content: "Today:";
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .change-column::before {
-        content: "Change:";
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .section-header {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .repo-activity-section {
-        padding: 0.75rem;
-    }
-    
-    .activity-row {
-        padding: 0.75rem;
-    }
-}
-
+/* =========================================================
+   Tooltips
+   ========================================================= */
 .tooltip-container {
   position: relative;
   display: inline-block;
@@ -358,9 +273,9 @@
   white-space: nowrap;
   z-index: 9999;
   opacity: 1;
-  transform: translateY(-8px);
 }
 
+/* Tooltip Positions */
 .tooltip-top {
   bottom: 100%;
   left: 50%;
@@ -385,6 +300,7 @@
   transform: translateX(6px) translateY(-50%);
 }
 
+/* Tooltip Arrows */
 .tooltip-arrow {
   position: absolute;
   width: 0;
@@ -424,14 +340,94 @@
   transform: translateY(-50%);
 }
 
+/* Ensure title="" tooltips work */
 .activity-header *[title],
 .activity-row *[title] {
   pointer-events: auto !important;
 }
 
-
-
-.activity-header * ,
+.activity-header *,
 .activity-row * {
   pointer-events: auto;
+}
+
+/* =========================================================
+   Responsive Design
+   ========================================================= */
+@media (max-width: 768px) {
+  .repo-activity-section {
+    padding: 1rem;
+    margin: 1rem auto;
+    border-radius: 12px;
+  }
+
+  .activity-header,
+  .activity-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 0.5rem;
+    text-align: left;
+  }
+
+  .activity-header {
+    display: none;
+  }
+
+  .activity-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .repo-column,
+  .commit-column,
+  .change-column {
+    text-align: left;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .repo-column::before {
+    content: "Repository:";
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .commit-column:nth-child(2)::before {
+    content: "Yesterday:";
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .commit-column:nth-child(3)::before {
+    content: "Today:";
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .change-column::before {
+    content: "Change:";
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .repo-activity-section {
+    padding: 0.75rem;
+  }
+  
+  .activity-row {
+    padding: 0.75rem;
+  }
 }
