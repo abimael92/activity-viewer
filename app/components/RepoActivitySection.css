@@ -206,16 +206,35 @@
 
 /* ===== FOOTER ===== */
 .activity-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
 }
 
 .activity-footer p {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.4);
     margin: 0;
+}
+
+
+.refresh-btn {
+    background: rgba(100, 108, 255, 0.2);
+    border: 1px solid #646cff;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(100, 108, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 /* ===== STATES ===== */
