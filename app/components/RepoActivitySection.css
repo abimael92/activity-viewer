@@ -83,6 +83,13 @@
   gap: 0.5rem;
 }
 
+.activity-grid,
+.activity-header,
+.activity-row {
+  overflow: visible !important;
+  position: relative;
+}
+
 .activity-header,
 .activity-row {
   display: grid;
@@ -124,6 +131,15 @@
   color: #ffffff;
   min-width: 0;
 }
+
+.repo-column,
+.commit-column,
+.date-column,
+.change-column {
+  overflow: visible !important;
+  position: relative;
+}
+
 
 .repo-name {
   font-weight: 600;
@@ -257,23 +273,29 @@
 .tooltip-container {
   position: relative;
   display: inline-block;
+
+  overflow: visible !important;
 }
 
 .tooltip-trigger {
   display: inline-flex;
 }
 
+/* DEBUG: force-show tooltip (remove after test) */
 .tooltip {
-  position: absolute;
-  background: #000;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  z-index: 9999;
-  opacity: 1;
+  position: fixed !important;
+  z-index: 9999999 !important;
+  background: rgba(0,0,0,0.9) !important;
+  color: #fff !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  left: 50% !important;
+  top: 20% !important;
+  transform: translateX(-50%) !important;
+  display: block !important;
+  pointer-events: auto !important;
 }
+
 
 /* Tooltip Positions */
 .tooltip-top {
