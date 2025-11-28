@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import './RepoActivitySection.css';
 import Tooltip from './Tooltip';
+import DateModal from "./DateModal";
+
 
 interface RepoActivity {
     name: string;
@@ -24,6 +26,8 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
     const [loading, setLoading] = useState(true);
     const [dates, setDates] = useState({ today: '', yesterday: '' });
     const [extraDates, setExtraDates] = useState<string[]>([]);
+    const [modalOpen, setModalOpen] = useState(false);
+
 
     const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
         try {
@@ -280,15 +284,8 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 </h3>
 
                 <div className="date-section">
-                    <button
-                        onClick={() => {
-                            const input = prompt("Enter date (YYYY-MM-DD)");
-                            if (!input) return;
-                            setExtraDates(prev => [...prev, input]);
-                        }}
-                    >
-                        Add Date
-                    </button>
+                    <button onClick={() => setModalOpen(true)}>Add Date</button>
+
 
                     <div className="date-range">
                         <Tooltip content="Full day commit count from midnight to midnight">
@@ -322,8 +319,20 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
                     {extraDates.map(d => (
                         <div key={d} className="commit-column date-header" title={`Commits on ${d}`}>
-                            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Extra Date</div>
-                            <div>{d}</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 900, opacity: 0.8, color: '#646cff' }}>Extra Date</div>
+                            <div
+                                style={{
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    background: "linear-gradient(135deg, #646cff, #00d4aa)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                    backgroundClip: "text",
+                                }}
+                            >
+                                {formatDate(d)}
+                            </div>
+
                         </div>
                     ))}
 
@@ -373,6 +382,16 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                     Updates automatically • Data refreshes hourly
                 </p>
             </div>
+
+            <DateModal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onSubmit={(date) => {
+                    setExtraDates(prev => [...prev, date]);
+                    setModalOpen(false);
+                }}
+            />
+
         </div>
     );
 }

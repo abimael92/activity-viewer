@@ -1045,23 +1045,88 @@ body {
     }
 }
 
+/* Export Controls */
+.export-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 .export-btn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #646cff, #747bff);
+    border: 1px solid rgba(100, 108, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    text-decoration: none;
 }
 
 .export-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background: linear-gradient(135deg, #747bff, #848bff);
+    border-color: rgba(100, 108, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
+}
+
+.export-btn:active {
+    transform: translateY(0);
+}
+
+/* Better SVG Icons */
+.export-btn svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.9;
+}
+
+/* Date Section Button Improvements */
+.date-section button {
+    background: linear-gradient(135deg, #00d4aa, #00c4a7);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.date-section button:hover {
+    background: linear-gradient(135deg, #00c4a7, #00b494);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+}
+
+.date-section button:active {
+    transform: translateY(0);
+}
+
+/* Empty State Button */
+.empty-state button {
+    background: linear-gradient(135deg, #646cff, #747bff);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.empty-state button:hover {
+    background: linear-gradient(135deg, #747bff, #848bff);
+    transform: translateY(-1px);
 }
 
 /* List View */

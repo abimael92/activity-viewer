@@ -15,6 +15,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
     const [visibleCount, setVisibleCount] = useState<number>(6);
     const [isMobile, setIsMobile] = useState(false);
+    const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
     // Detect mobile screen size
     useEffect(() => {
@@ -46,7 +47,22 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
         return () => window.removeEventListener('resize', checkMobile);
     }, [view]);
 
-    console.log('this are all the stats: ', stats);
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (activeTooltip) {
+                setActiveTooltip(null);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [activeTooltip]);
+
+    const toggleTooltip = (tooltipId: string) => {
+        setActiveTooltip(activeTooltip === tooltipId ? null : tooltipId);
+    };
+
+    // console.log('this are all the stats: ', stats);
 
     const [now] = useState(() => Date.now());
 
@@ -140,6 +156,47 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const canShowMore = visibleCount < stats.length;
     const canShowLess = visibleCount > (isMobile ? 3 : 6);
 
+    const exportData = (format: 'csv' | 'json') => {
+        const exportStats = sortedStats.map(stat => ({
+            Repository: stat.name,
+            Language: stat.language || 'Not specified',
+            'Total Commits': stat.totalCommits,
+            'Best Streak': stat.maxConsecutiveDays,
+            'Peak Commits': stat.maxCommits,
+            'Peak Date': stat.maxCommitsDate ? formatDate(stat.maxCommitsDate) : 'N/A',
+            'Last Commit': stat.lastCommitDate ? formatDateTime(stat.lastCommitDate) : 'N/A',
+            'Created Date': formatDate(stat.createdAt),
+            'Repository Age': getRepositoryAge(stat.createdAt),
+            Description: stat.description || 'No description'
+        }));
+
+        if (format === 'csv') {
+            // CSV Export
+            const headers = Object.keys(exportStats[0]).join(',');
+            const rows = exportStats.map(stat => Object.values(stat).map(value =>
+                `"${String(value).replace(/"/g, '""')}"`
+            ).join(','));
+            const csv = [headers, ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Repositories_Insights-${new Date().toISOString().split('T')[0].split('-').reverse().join('-')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else if (format === 'json') {
+            // JSON Export
+            const json = JSON.stringify(exportStats, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Repositories_Insights-${new Date().toISOString().split('T')[0].split('-').reverse().join('-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    };
+
     return (
         <div className="repo-stats-container">
             {/* Add loading state at the beginning */}
@@ -221,7 +278,14 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                         {/* Add tooltip wrapper around the main card content */}
                                         <div className="tooltip-wrapper">
-                                            <div className="card-header">
+                                            <div
+                                                className="card-header"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleTooltip(`${stat.name}-main`);
+                                                }}
+                                                style={{ cursor: 'pointer' }}
+                                            >
                                                 <div className="repo-main-info">
                                                     <div
                                                         className="repo-avatar"
@@ -294,30 +358,86 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                             </div>
 
                                             {/* Tooltip content */}
-                                            <div className="tooltip">
-                                                <div><strong>{stat.name}</strong></div>
-                                                <div>Created: {formatDate(stat.createdAt)}</div>
-                                                <div>Language: {stat.language || 'Not specified'}</div>
-                                                <div>Total Commits: {stat.totalCommits}</div>
-                                                <div>Best Streak: {stat.maxConsecutiveDays} days</div>
-                                                {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
+                                            {activeTooltip === `${stat.name}-main` && (
+                                                <div className="tooltip active">
+                                                    <div><strong>{stat.name}</strong></div>
+                                                    <div>Created: {formatDate(stat.createdAt)}</div>
+                                                    <div>Language: {stat.language || 'Not specified'}</div>
+                                                    <div>Total Commits: {stat.totalCommits}</div>
+                                                    <div>Best Streak: {stat.maxConsecutiveDays} days</div>
+                                                    {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
 
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="card-stats">
-                                            <div className="stat-pill primary">
-                                                <span className="stat-value">{stat.totalCommits}</span>
-                                                <span className="stat-label">Total</span>
+                                            {/* Total Commits Tooltip */}
+                                            <div className="tooltip-wrapper">
+                                                <div
+                                                    className="stat-pill primary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleTooltip(`${stat.name}-total`);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <span className="stat-value">{stat.totalCommits}</span>
+                                                    <span className="stat-label">Total</span>
+                                                </div>
+                                                {activeTooltip === `${stat.name}-total` && (
+                                                    <div className="tooltip active">
+                                                        <strong>Total Commits</strong>
+                                                        <div>All-time commit count in this repository</div>
+                                                        <div>Shows overall project activity</div>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="stat-pill secondary">
-                                                <span className="stat-value">{stat.maxCommits}</span>
-                                                <span className="stat-label">Peak</span>
-                                                {!isMobile && <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>}
+
+                                            {/* Peak Commits Tooltip */}
+                                            <div className="tooltip-wrapper">
+                                                <div
+                                                    className="stat-pill secondary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleTooltip(`${stat.name}-peak`);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <span className="stat-value">{stat.maxCommits}</span>
+                                                    <span className="stat-label">Peak</span>
+                                                    {!isMobile && <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>}
+                                                </div>
+                                                {activeTooltip === `${stat.name}-peak` && (
+                                                    <div className="tooltip active">
+                                                        <strong>Peak Activity</strong>
+                                                        <div>Most commits in a single day: {stat.maxCommits}</div>
+                                                        {stat.maxCommitsDate && <div>Peak date: {formatDate(stat.maxCommitsDate)}</div>}
+                                                        <div>Shows maximum daily productivity</div>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="stat-pill success">
-                                                <span className="stat-value">{stat.maxConsecutiveDays}</span>
-                                                <span className="stat-label">Streak</span>
+
+                                            {/* Streak Tooltip */}
+                                            <div className="tooltip-wrapper">
+                                                <div
+                                                    className="stat-pill success"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleTooltip(`${stat.name}-streak`);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <span className="stat-value">{stat.maxConsecutiveDays}</span>
+                                                    <span className="stat-label">Streak</span>
+                                                </div>
+                                                {activeTooltip === `${stat.name}-streak` && (
+                                                    <div className="tooltip active">
+                                                        <strong>Best Streak</strong>
+                                                        <div>Longest consecutive days with commits: {stat.maxConsecutiveDays}</div>
+                                                        <div>Shows consistency and dedication</div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -428,7 +548,14 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                         {/* Add tooltip wrapper around the main list item content */}
                                         <div className="tooltip-wrapper">
                                             <div className="list-item-main">
-                                                <div className="list-repo-info">
+                                                <div
+                                                    className="list-repo-info"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleTooltip(`${stat.name}-main`);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
                                                     <div
                                                         className="repo-avatar"
                                                         style={{
@@ -502,19 +629,71 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                 </button>
 
                                                 <div className="list-stats">
-                                                    <div className="list-stat">
-                                                        <span className="list-stat-value">{stat.totalCommits}</span>
-                                                        <span className="list-stat-label">Commits</span>
+                                                    {/* Total Commits Tooltip */}
+                                                    <div className="tooltip-wrapper">
+                                                        <div
+                                                            className="list-stat"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleTooltip(`${stat.name}-total`);
+                                                            }}
+                                                            style={{ cursor: 'pointer' }}
+                                                        >
+                                                            <span className="list-stat-value">{stat.totalCommits}</span>
+                                                            <span className="list-stat-label">Commits</span>
+                                                        </div>
+                                                        {activeTooltip === `${stat.name}-total` && (
+                                                            <div className="tooltip active">
+                                                                <strong>Total Commits</strong>
+                                                                <div>All-time commit count in this repository</div>
+                                                                <div>Shows overall project activity</div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {/* {!isMobile && ( */}
-                                                    <div className="list-stat">
-                                                        <span className="list-stat-value">{stat.maxConsecutiveDays}</span>
-                                                        <span className="list-stat-label">Streak</span>
+
+                                                    {/* Streak Tooltip */}
+                                                    <div className="tooltip-wrapper">
+                                                        <div
+                                                            className="list-stat"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleTooltip(`${stat.name}-streak`);
+                                                            }}
+                                                            style={{ cursor: 'pointer' }}
+                                                        >
+                                                            <span className="list-stat-value">{stat.maxConsecutiveDays}</span>
+                                                            <span className="list-stat-label">Streak</span>
+                                                        </div>
+                                                        {activeTooltip === `${stat.name}-streak` && (
+                                                            <div className="tooltip active">
+                                                                <strong>Best Streak</strong>
+                                                                <div>Longest consecutive days with commits: {stat.maxConsecutiveDays}</div>
+                                                                <div>Shows consistency and dedication</div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {/* )} */}
-                                                    <div className="list-stat">
-                                                        <span className="list-stat-value">{stat.maxCommits}</span>
-                                                        <span className="list-stat-label">Peak</span>
+
+                                                    {/* Peak Tooltip */}
+                                                    <div className="tooltip-wrapper">
+                                                        <div
+                                                            className="list-stat"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleTooltip(`${stat.name}-peak`);
+                                                            }}
+                                                            style={{ cursor: 'pointer' }}
+                                                        >
+                                                            <span className="list-stat-value">{stat.maxCommits}</span>
+                                                            <span className="list-stat-label">Peak</span>
+                                                        </div>
+                                                        {activeTooltip === `${stat.name}-peak` && (
+                                                            <div className="tooltip active">
+                                                                <strong>Peak Activity</strong>
+                                                                <div>Most commits in a single day: {stat.maxCommits}</div>
+                                                                {stat.maxCommitsDate && <div>Peak date: {formatDate(stat.maxCommitsDate)}</div>}
+                                                                <div>Shows maximum daily productivity</div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -532,122 +711,143 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                             </div>
 
                                             {/* Tooltip content */}
-                                            <div className="tooltip">
-                                                <div><strong>{stat.name}</strong></div>
-                                                <div>Created: {formatDate(stat.createdAt)}</div>
-                                                <div>Language: {stat.language || 'Not specified'}</div>
-                                                <div>Total Commits: {stat.totalCommits}</div>
-                                                <div>Best Streak: {stat.maxConsecutiveDays} days</div>
-                                                {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
-                                            </div>
-                                        </div>
+                                            {activeTooltip === `${stat.name}-main` && (
+                                                <div className="tooltip active">
+                                                    <div><strong>{stat.name}</strong></div>
+                                                    <div>Created: {formatDate(stat.createdAt)}</div>
+                                                    <div>Language: {stat.language || 'Not specified'}</div>
+                                                    <div>Total Commits: {stat.totalCommits}</div>
+                                                    <div>Best Streak: {stat.maxConsecutiveDays} days</div>
+                                                    {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
+                                                </div>
+                                            )}
 
-                                        {
-                                            expandedCards.has(stat.name) && (
-                                                <div className="list-item-details">
-                                                    {stat.description && (
-                                                        <div className="detail-item">
-                                                            <span className="detail-label">Description</span>
-                                                            <span className="detail-value">
-                                                                {isMobile && stat.description.length > 100
-                                                                    ? `${stat.description.substring(0, 100)}...`
-                                                                    : stat.description
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {stat.lastCommitDate && (
-                                                        <div className="detail-item">
-                                                            <span className="detail-label">Last Commit</span>
-                                                            <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Recent Activity Section */}
-                                                    <div className="recent-activity-section">
-                                                        <h5 className="activity-title">Recent Activity</h5>
-                                                        {getRecentCommits(stat).length > 0 ? (
-                                                            <div className="commit-list">
-                                                                {getRecentCommits(stat).slice(0, isMobile ? 2 : 4).map((commit, index) => (
-                                                                    <div key={index} className="commit-item">
-                                                                        <div className="commit-message">
-                                                                            <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
-                                                                            <span className="commit-text">
-                                                                                {isMobile && commit.message.length > 50
-                                                                                    ? `${commit.message.substring(0, 50)}...`
-                                                                                    : commit.message
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="commit-meta">
-                                                                            <span className="commit-date">{formatDateTime(commit.date)}</span>
-                                                                            {commit.author && !isMobile && (
-                                                                                <span className="commit-author">by {commit.author}</span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="no-activity">
-                                                                <span className="no-activity-text">No recent commits</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="activity-meter">
-                                                        <div className="meter-label">Activity Level</div>
-                                                        <div className="meter-bar">
-                                                            <div
-                                                                className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
-                                                                style={{
-                                                                    width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
-                                                                }}
-                                                            >
-                                                                <span className="meter-text">
-                                                                    {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                            {
+                                                expandedCards.has(stat.name) && (
+                                                    <div className="list-item-details">
+                                                        {stat.description && (
+                                                            <div className="detail-item">
+                                                                <span className="detail-label">Description</span>
+                                                                <span className="detail-value">
+                                                                    {isMobile && stat.description.length > 100
+                                                                        ? `${stat.description.substring(0, 100)}...`
+                                                                        : stat.description
+                                                                    }
                                                                 </span>
                                                             </div>
+                                                        )}
+                                                        {stat.lastCommitDate && (
+                                                            <div className="detail-item">
+                                                                <span className="detail-label">Last Commit</span>
+                                                                <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Recent Activity Section */}
+                                                        <div className="recent-activity-section">
+                                                            <h5 className="activity-title">Recent Activity</h5>
+                                                            {getRecentCommits(stat).length > 0 ? (
+                                                                <div className="commit-list">
+                                                                    {getRecentCommits(stat).slice(0, isMobile ? 2 : 4).map((commit, index) => (
+                                                                        <div key={index} className="commit-item">
+                                                                            <div className="commit-message">
+                                                                                <span className="commit-hash">#{commit.hash?.substring(0, 7) || 'N/A'}</span>
+                                                                                <span className="commit-text">
+                                                                                    {isMobile && commit.message.length > 50
+                                                                                        ? `${commit.message.substring(0, 50)}...`
+                                                                                        : commit.message
+                                                                                    }
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="commit-meta">
+                                                                                <span className="commit-date">{formatDateTime(commit.date)}</span>
+                                                                                {commit.author && !isMobile && (
+                                                                                    <span className="commit-author">by {commit.author}</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="no-activity">
+                                                                    <span className="no-activity-text">No recent commits</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="activity-meter">
+                                                            <div className="meter-label">Activity Level</div>
+                                                            <div className="meter-bar">
+                                                                <div
+                                                                    className={`meter-fill ${getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays)}`}
+                                                                    style={{
+                                                                        width: `${Math.min((stat.totalCommits / 50) * 100, 100)}%`
+                                                                    }}
+                                                                >
+                                                                    <span className="meter-text">
+                                                                        {getActivityLevel(stat.totalCommits, stat.maxConsecutiveDays).replace('-', ' ')}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )
-                                        }
+                                                )
+                                            }
+                                        </div>
                                     </div>
                                 ))}
+
+                                {/* Show More/Less Controls */}
+                                {(canShowMore || canShowLess) && (
+                                    <div className="show-more-controls">
+                                        {canShowMore && (
+                                            <button className="show-more-btn" onClick={showMore}>
+                                                Show More ({isMobile ? 1 : 2})
+                                            </button>
+                                        )}
+                                        {canShowLess && (
+                                            <button className="show-less-btn" onClick={showLess}>
+                                                Show Less
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="stats-footer">
+                                    <div className="export-controls">
+                                        <button
+                                            className="export-btn"
+                                            onClick={() => exportData('csv')}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                <polyline points="14,2 14,8 20,8" />
+                                                <path d="M16 13H8" />
+                                                <path d="M16 17H8" />
+                                                <polyline points="10,9 9,9 8,9" />
+                                            </svg>
+                                            {isMobile ? 'CSV' : 'Export CSV'}
+                                        </button>
+                                        <button
+                                            className="export-btn"
+                                            onClick={() => exportData('json')}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+                                                <path d="M18 14h-8" />
+                                                <path d="M15 18h-5" />
+                                                <path d="M10 6h8v4h-8z" />
+                                            </svg>
+                                            {isMobile ? 'JSON' : 'Export JSON'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Show More/Less Controls */}
-                        {(canShowMore || canShowLess) && (
-                            <div className="show-more-controls">
-                                {canShowMore && (
-                                    <button className="show-more-btn" onClick={showMore}>
-                                        Show More ({isMobile ? 1 : 2})
-                                    </button>
-                                )}
-                                {canShowLess && (
-                                    <button className="show-less-btn" onClick={showLess}>
-                                        Show Less
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="stats-footer">
-                            <div className="export-controls">
-                                <button className="export-btn">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 1v8m0 0l2-2m-2 2L6 7m6 4v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" />
-                                    </svg>
-                                    {isMobile ? 'Export' : 'Export Data'}
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </>
-            )
-            }
-        </div >
+            )}
+        </div>
     );
 }
