@@ -395,9 +395,11 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 <p title="Data is automatically fetched from GitHub API every hour">
                     Updates automatically • Data refreshes hourly
                 </p>
-                <button onClick={() => fetchRepoActivity()} className="refresh-btn">
-                    Refresh Now
-                </button>
+                <Tooltip content="Refresh repository activity data now">
+                    <button onClick={() => fetchRepoActivity()} className="refresh-btn">
+                        Refresh Now
+                    </button>
+                </Tooltip>
             </div >
 
             <DateModal
