@@ -1,4 +1,6 @@
 /* components/RepoActivitySection.css */
+
+/* ===== MAIN CONTAINER ===== */
 .repo-activity-section {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 16px;
@@ -10,6 +12,7 @@
     backdrop-filter: blur(10px);
 }
 
+/* ===== HEADER SECTION ===== */
 .repo-activity-section .section-header {
     display: flex;
     justify-content: space-between;
@@ -30,6 +33,7 @@
     line-height: 1;
 }
 
+/* Date Range Styles */
 .repo-activity-section .date-range {
     display: flex;
     align-items: center;
@@ -60,8 +64,6 @@
     transform: translateY(-1px);
 }
 
-
-
 .date-value {
     font-size: 1.2rem;
     font-weight: 700;
@@ -73,14 +75,14 @@
     padding: 0;
 }
 
-/* Activity Grid - FIXED for dynamic columns */
+/* ===== ACTIVITY GRID LAYOUT ===== */
 .activity-grid {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-/* Dynamic grid columns */
+/* Grid Structure */
 .activity-header,
 .activity-row {
     display: grid;
@@ -111,7 +113,9 @@
     transform: translateY(-1px);
 }
 
-/* Column Styles */
+/* ===== GRID COLUMNS ===== */
+
+/* Repository Column */
 .repo-column {
     font-weight: 500;
     font-size: large;
@@ -127,6 +131,7 @@
     text-overflow: ellipsis;
 }
 
+/* Commit Columns */
 .commit-column {
     text-align: center;
     color: rgba(255, 255, 255, 0.8);
@@ -135,7 +140,7 @@
     min-width: 100px;
 }
 
-/* NEW: Styles for extra date columns */
+/* Date-specific Columns */
 .commit-column.date-header,
 .commit-column.date-column {
     min-width: 90px;
@@ -160,6 +165,7 @@
     color: rgba(255, 255, 255, 0.7);
 }
 
+/* Change Column */
 .change-column {
     text-align: center;
     font-weight: 600;
@@ -171,6 +177,7 @@
     font-size: 1rem;
 }
 
+/* Trend Colors */
 .trend-up {
     color: #4caf50;
 }
@@ -183,7 +190,7 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* Header Column Alignment */
+/* ===== HEADER SPECIFIC STYLES ===== */
 .activity-header .repo-column {
     padding-left: 0.5rem;
     font-size: x-large;
@@ -197,16 +204,7 @@
     color: #646cff;
 }
 
-/* JavaScript to dynamically update grid columns */
-.activity-header {
-    grid-template-columns: minmax(200px, 1fr) 100px 100px;
-}
-
-.activity-row {
-    grid-template-columns: minmax(200px, 1fr) 100px 100px;
-}
-
-/* Footer */
+/* ===== FOOTER ===== */
 .activity-footer {
     margin-top: 1.5rem;
     padding-top: 1rem;
@@ -219,6 +217,8 @@
     color: rgba(255, 255, 255, 0.4);
     margin: 0;
 }
+
+/* ===== STATES ===== */
 
 /* Loading States */
 .repo-activity-section .loading {
@@ -260,7 +260,9 @@
     font-size: 1rem;
 }
 
-/* Responsive Design */
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablet */
 @media (max-width: 768px) {
     .repo-activity-section {
         padding: 1rem;
@@ -288,6 +290,7 @@
         padding: 1rem;
     }
 
+    /* Mobile column labels */
     .repo-column,
     .commit-column,
     .change-column {
@@ -329,6 +332,7 @@
     }
 }
 
+/* Mobile */
 @media (max-width: 480px) {
     .repo-activity-section {
         padding: 0.75rem;
