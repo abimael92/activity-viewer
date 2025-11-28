@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { RepoStat } from '@/types';
+import Tooltip from './Tooltip';
 
 interface RepoStatsProps {
     stats: RepoStat[];
@@ -354,7 +355,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                     </svg>
                                                 </button>
 
-
                                             </div>
 
                                             {/* Tooltip content */}
@@ -373,49 +373,32 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                         <div className="card-stats">
                                             {/* Total Commits Tooltip */}
-                                            <div className="tooltip-wrapper">
-                                                <div
-                                                    className="stat-pill primary"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleTooltip(`${stat.name}-total`);
-                                                    }}
-                                                    style={{ cursor: 'pointer' }}
-                                                >
-                                                    <span className="stat-value">{stat.totalCommits}</span>
-                                                    <span className="stat-label">Total</span>
-                                                </div>
-                                                {activeTooltip === `${stat.name}-total` && (
-                                                    <div className="tooltip active">
-                                                        <strong>Total Commits</strong>
-                                                        <div>All-time commit count in this repository</div>
-                                                        <div>Shows overall project activity</div>
-                                                    </div>
-                                                )}
+                                            <div
+                                                className="stat-pill primary"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleTooltip(`${stat.name}-total`);
+                                                }}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <span className="stat-value">{stat.totalCommits}</span>
+                                                <span className="stat-label">Total</span>
                                             </div>
 
                                             {/* Peak Commits Tooltip */}
-                                            <div className="tooltip-wrapper">
-                                                <div
-                                                    className="stat-pill secondary"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleTooltip(`${stat.name}-peak`);
-                                                    }}
-                                                    style={{ cursor: 'pointer' }}
-                                                >
+                                            <div
+                                                className="stat-pill secondary"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleTooltip(`${stat.name}-peak`);
+                                                }}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <Tooltip position="bottom" content="Peak Activity: Most commits in a single day">
                                                     <span className="stat-value">{stat.maxCommits}</span>
                                                     <span className="stat-label">Peak</span>
                                                     {!isMobile && <span className="detail-value">{formatDate(stat.maxCommitsDate)}</span>}
-                                                </div>
-                                                {activeTooltip === `${stat.name}-peak` && (
-                                                    <div className="tooltip active">
-                                                        <strong>Peak Activity</strong>
-                                                        <div>Most commits in a single day: {stat.maxCommits}</div>
-                                                        {stat.maxCommitsDate && <div>Peak date: {formatDate(stat.maxCommitsDate)}</div>}
-                                                        <div>Shows maximum daily productivity</div>
-                                                    </div>
-                                                )}
+                                                </Tooltip>
                                             </div>
 
                                             {/* Streak Tooltip */}

@@ -278,9 +278,11 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             <div className="section-header">
                 <h3>
                     Daily Repository Activity
-                    <span className="tooltip-icon" title="Compare yesterday's vs today's commit activity across all repositories">
-                        ℹ️
-                    </span>
+                    <Tooltip content="Compare yesterday's vs today's commit activity across all repositories">
+                        <span className="tooltip-icon" >
+                            ℹ️
+                        </span>
+                    </Tooltip>
                 </h3>
 
                 <div className="date-section">
