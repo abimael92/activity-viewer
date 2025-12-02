@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Footer from './components/Footer'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -22,11 +23,15 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
-                {/* Add the missing favicon.ico as fallback */}
                 <link rel="icon" href="/favicon.ico" />
             </head>
             <body className="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen text-white">
-                {children}
+                <div className="flex flex-col min-h-screen">
+                    <main className="flex-grow">
+                        {children}
+                    </main>
+                    <Footer />
+                </div>
             </body>
         </html>
     )
