@@ -314,9 +314,9 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                                                 <span className={`priority-badge ${getPriorityClasses(todo.priority)}`}>
                                                     {todo.priority}
                                                 </span>
-                                                <span className="todo-date">
+                                                {/* <span className="todo-date">
                                                     {new Date(todo.createdAt).toLocaleDateString()}
-                                                </span>
+                                                </span> */}
                                             </div>
                                         </div>
                                     </div>
