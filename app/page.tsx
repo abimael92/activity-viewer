@@ -9,6 +9,7 @@ import { RepoActivitySection } from './components/RepoActivitySection';
 
 import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from '@/lib/github';
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
+import TodoList from './components/TodoList';
 
 interface GitHubCommit {
     sha: string;
@@ -394,6 +395,8 @@ export default function Home() {
         };
     }, [username, loadFullYearRepoStats, loadInactivitySections]);
 
+
+
     return (
         <div id="app">
             <header className="app-header">
@@ -452,6 +455,13 @@ export default function Home() {
                 )}
 
                 <RepoActivitySection className="mt-6" />
+
+                <div className="mt-8">
+                    <TodoList
+                        projectId="github-tracker"
+                        githubUsername={username}
+                    />
+                </div>
 
                 {fullYearRepoStats && (
                     <RepoStats
