@@ -3205,3 +3205,41 @@ body {
 .todo-item:nth-child(even) {
     animation-delay: 0.1s;
 }
+
+/* Add to your global CSS or component CSS */
+.repo-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid;
+    margin-right: 0.5rem;
+}
+
+.priority-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+}
+
+.priority-high {
+    background-color: #EF4444; /* red */
+}
+
+.priority-medium {
+    background-color: #F59E0B; /* amber */
+}
+
+.priority-low {
+    background-color: #10B981; /* emerald */
+}
+
+.todo-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
