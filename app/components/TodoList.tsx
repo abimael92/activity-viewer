@@ -83,6 +83,36 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
         }
     }, []);
 
+
+    // After line 69 (after the fetchUserRepos function), add:
+    const [filterRepo, setFilterRepo] = useState<string>('all');
+
+    // Replace the duplicate filteredTodos declaration (around line 150) with:
+    const filteredTodos = todos.filter(todo => {
+        // Status filter
+        if (!showCompleted && todo.status === 'completed') return false;
+
+        // Priority filter
+        if (filterPriority !== 'all' && todo.priority !== filterPriority) return false;
+
+        // NEW: Repo filter
+        if (filterRepo !== 'all') {
+            if (filterRepo === 'none') {
+                // Show only todos without repo
+                if (todo.repoId) return false;
+            } else {
+                // Show only todos with specific repo
+                if (!todo.repoId || todo.repoId !== filterRepo) return false;
+            }
+        }
+
+        return true;
+    });
+
+    // NEW: Get pending and completed todos separately
+    const pendingTodos = todos.filter(t => t.status !== 'completed');
+    const completedTodos = todos.filter(t => t.status === 'completed');
+
     const getTodoColor = (todo: Todo): string => {
         if (!todo.repoName) return '#6B7280';
         const repoName = todo.repoName.split('/').pop() || todo.repoName;
@@ -117,21 +147,6 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
             default: return '';
         }
     };
-
-    // NEW: Filter todos based on status and priority
-    const filteredTodos = todos.filter(todo => {
-        // Status filter
-        if (!showCompleted && todo.status === 'completed') return false;
-
-        // Priority filter
-        if (filterPriority !== 'all' && todo.priority !== filterPriority) return false;
-
-        return true;
-    });
-
-    // NEW: Get pending and completed todos separately
-    const pendingTodos = todos.filter(t => t.status !== 'completed');
-    const completedTodos = todos.filter(t => t.status === 'completed');
 
     async function addTodo(e?: MouseEvent<HTMLButtonElement>) {
         if (e) e.preventDefault();
@@ -276,6 +291,28 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                         <option value="high">High Priority</option>
                         <option value="medium">Medium Priority</option>
                         <option value="low">Low Priority</option>
+                    </select>
+
+                    <select
+                        value={filterRepo}
+                        onChange={(e) => setFilterRepo(e.target.value)}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            cursor: 'pointer',
+                            minWidth: '150px'
+                        }}
+                    >
+                        <option value="all">All Repos</option>
+                        <option value="none">No Repo</option>
+                        {repos.map(repo => (
+                            <option key={repo.id} value={repo.id}>
+                                {repo.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -485,46 +522,6 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                         );
                     })
                 )}
-            </div>
-
-            {/* NEW: Summary view toggle */}
-            <div style={{
-                marginTop: '2rem',
-                padding: '1rem',
-                background: 'rgba(255, 255, 255, 0.04)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                textAlign: 'center'
-            }}>
-                {/* <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '1rem' }}>
-                    <div>
-                        <span style={{ color: '#4caf50', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                            {pendingTodos.length}
-                        </span>
-                        <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>Active</div>
-                    </div>
-                    <div>
-                        <span style={{ color: '#646cff', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                            {completedTodos.length}
-                        </span>
-                        <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>Completed</div>
-                    </div>
-                </div> */}
-                <button
-                    onClick={() => setShowCompleted(!showCompleted)}
-                    style={{
-                        padding: '0.75rem 2rem',
-                        background: 'linear-gradient(135deg, #646cff, #00d4aa)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                    }}
-                >
-                    {showCompleted ? 'View Active Todos' : 'View Completed Todos'}
-                </button>
             </div>
 
             {/* Stats */}
