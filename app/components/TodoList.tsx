@@ -1,11 +1,12 @@
 // components/TodoList.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, MouseEvent } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { Todo } from '@/types/todo';
 import { fetchWithAuth } from '@/lib/github';
+import { getRepoColor } from '@/lib/colors';
 
 interface GitHubRepo {
     id: number;
@@ -22,7 +23,11 @@ interface TodoListProps {
 
 export default function TodoList({ projectId, githubUsername = '' }: TodoListProps) {
     const [todos, setTodos] = useState<Todo[]>([]);
-    const [repos, setRepos] = useState<Array<{ id: string, name: string, full_name?: string }>>([]);
+    const [repos, setRepos] = useState<Array<{
+        id: string,
+        name: string,
+        full_name?: string,
+    }>>([]);
     const [newTodo, setNewTodo] = useState<{ title: string; priority: 'low' | 'medium' | 'high'; repoId?: string; }>({
         title: '',
         priority: 'medium',
@@ -32,11 +37,14 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
     const [reposLoading, setReposLoading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editData, setEditData] = useState<Partial<Todo>>({});
+    const [repoColors, setRepoColors] = useState<Record<string, string>>({});
+    const [showCompleted, setShowCompleted] = useState(false); // NEW: Filter state
+    const [filterPriority, setFilterPriority] = useState<string>('all'); // NEW: Priority filter
 
-    // Independent function to fetch user repos
     const fetchUserRepos = useCallback(async (username: string) => {
         if (!username.trim()) {
             setRepos([]);
+            setRepoColors({});
             return;
         }
 
@@ -48,145 +56,190 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
 
             if (repoRes.ok) {
                 const reposData = await repoRes.json();
-                const formattedRepos = reposData.map((repo: GitHubRepo) => ({
-                    id: repo.id.toString(),
-                    name: repo.name,
-                    full_name: repo.full_name,
-                    description: repo.description,
-                    language: repo.language ?? undefined
-                }));
+                const colorMap: Record<string, string> = {};
+
+                const formattedRepos = reposData.map((repo: GitHubRepo) => {
+                    const color = getRepoColor(repo.name);
+                    colorMap[repo.id.toString()] = color;
+
+                    return {
+                        id: repo.id.toString(),
+                        name: repo.name,
+                        full_name: repo.full_name,
+                        description: repo.description,
+                        language: repo.language ?? undefined,
+                    };
+                });
+
                 setRepos(formattedRepos);
+                setRepoColors(colorMap);
             }
         } catch (error) {
             console.error('Error fetching repos:', error);
             setRepos([]);
+            setRepoColors({});
         } finally {
             setReposLoading(false);
         }
     }, []);
 
-    // Load repos when githubUsername changes
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            fetchUserRepos(githubUsername);
-        }, 300);
 
-        return () => clearTimeout(timeoutId);
-    }, [githubUsername, fetchUserRepos]);
+    // After line 69 (after the fetchUserRepos function), add:
+    const [filterRepo, setFilterRepo] = useState<string>('all');
 
-    // Load todos from Firestore
-    useEffect(() => {
+    // Replace the duplicate filteredTodos declaration (around line 150) with:
+    const filteredTodos = todos.filter(todo => {
+        // Status filter
+        if (!showCompleted && todo.status === 'completed') return false;
 
-        const todosQuery = projectId
-            ? query(
-                collection(db, 'todos'),
-                where('projectId', '==', projectId),
-                orderBy('createdAt', 'desc')
-            )
-            : query(
-                collection(db, 'todos'),
-                orderBy('createdAt', 'desc')
-            );
+        // Priority filter
+        if (filterPriority !== 'all' && todo.priority !== filterPriority) return false;
 
-        console.log('Firestore query created');
-
-
-        const unsubscribe = onSnapshot(todosQuery, (snapshot) => {
-            const todoList = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Todo[];
-            setTodos(todoList);
-        });
-
-        return () => unsubscribe();
-    }, [projectId]);
-
-    const addTodo = async (e?: React.MouseEvent) => {
-        if (e) {
-            e.preventDefault(); // Prevent form submission if inside a form
-            e.stopPropagation();
+        // NEW: Repo filter
+        if (filterRepo !== 'all') {
+            if (filterRepo === 'none') {
+                // Show only todos without repo
+                if (todo.repoId) return false;
+            } else {
+                // Show only todos with specific repo
+                if (!todo.repoId || todo.repoId !== filterRepo) return false;
+            }
         }
 
-        console.log('Add todo clicked'); // Debug log
+        return true;
+    });
 
-        if (!newTodo.title.trim()) {
-            alert('Please enter a todo title');
-            return;
+    // NEW: Get pending and completed todos separately
+    const pendingTodos = todos.filter(t => t.status !== 'completed');
+    const completedTodos = todos.filter(t => t.status === 'completed');
+
+    const getTodoColor = (todo: Todo): string => {
+        if (!todo.repoName) return '#6B7280';
+        const repoName = todo.repoName.split('/').pop() || todo.repoName;
+        const colors = [
+            '#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#00FFFF',
+            '#0000FF', '#8B00FF', '#FF1493',
+        ];
+        let sum = 0;
+        for (let i = 0; i < repoName.length; i++) {
+            sum += repoName.charCodeAt(i);
         }
+        return colors[sum % colors.length];
+    };
 
+    const getRepoDisplayName = (repoName: string | undefined): string => {
+        if (!repoName) return '';
+        return repoName.split('/').pop() || repoName;
+    };
+
+    const getTodoItemClasses = (todo: Todo): string => {
+        const baseClass = 'todo-item';
+        const statusClass = todo.status === 'completed' ? 'completed' : '';
+        const priorityClass = `${todo.priority}-priority`;
+        return `${baseClass} ${statusClass} ${priorityClass}`.trim();
+    };
+
+    const getPriorityBadgeClass = (priority: string): string => {
+        switch (priority) {
+            case 'high': return 'priority-high';
+            case 'medium': return 'priority-medium';
+            case 'low': return 'priority-low';
+            default: return '';
+        }
+    };
+
+    async function addTodo(e?: MouseEvent<HTMLButtonElement>) {
+        if (e) e.preventDefault();
+
+        if (!newTodo.title.trim()) return;
 
         setLoading(true);
         try {
-            const selectedRepo = repos.find(repo => repo.id === newTodo.repoId); // FIXED: Use 'repos' not 'availableRepos'
+            const selectedRepo = repos.find(r => r.id === newTodo.repoId);
 
             await addDoc(collection(db, 'todos'), {
-                ...newTodo,
+                title: newTodo.title.trim(),
+                priority: newTodo.priority,
                 status: 'pending',
-                projectId: projectId || null,
                 repoId: newTodo.repoId || null,
-                repoName: selectedRepo?.full_name || selectedRepo?.name || null,
+                repoName: selectedRepo?.name || null,
+                projectId: projectId || null,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
 
-            console.log('7. Todo data to save:', addDoc);
-
-            setNewTodo({
-                title: '',
-                priority: 'medium',
-                repoId: ''
-            });
+            setNewTodo({ title: '', priority: 'medium', repoId: '' });
         } catch (error) {
             console.error('Error adding todo:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }
 
-    const updateTodo = async (id: string, updates: Partial<Todo>) => {
+    async function updateTodo(id: string, updates: Partial<Todo>) {
         try {
             await updateDoc(doc(db, 'todos', id), {
                 ...updates,
                 updatedAt: new Date().toISOString()
             });
             setEditingId(null);
+            setEditData({});
         } catch (error) {
             console.error('Error updating todo:', error);
         }
-    };
+    }
 
-    const deleteTodo = async (id: string) => {
+    async function toggleStatus(todo: Todo) {
+        const newStatus = todo.status === 'completed' ? 'pending' : 'completed';
+        await updateTodo(todo.id, { status: newStatus });
+    }
+
+    async function deleteTodo(id: string) {
         if (!confirm('Are you sure you want to delete this todo?')) return;
-
         try {
             await deleteDoc(doc(db, 'todos', id));
         } catch (error) {
             console.error('Error deleting todo:', error);
         }
+    }
+
+    // NEW: Initialize edit data properly
+    const startEditing = (todo: Todo) => {
+        setEditingId(todo.id);
+        setEditData({
+            title: todo.title,
+            priority: todo.priority,
+            repoId: todo.repoId || undefined
+        });
     };
 
-    const toggleStatus = (todo: Todo) => {
-        const newStatus = todo.status === 'completed' ? 'pending' : 'completed';
-        updateTodo(todo.id, { status: newStatus });
-    };
-
-    const getPriorityClasses = (priority: 'low' | 'medium' | 'high') => {
-        switch (priority) {
-            case 'high':
-                return 'priority-high';
-            case 'medium':
-                return 'priority-medium';
-            case 'low':
-                return 'priority-low';
+    useEffect(() => {
+        if (githubUsername) {
+            fetchUserRepos(githubUsername);
         }
-    };
+    }, [githubUsername, fetchUserRepos]);
 
-    const getTodoItemClasses = (todo: Todo) => {
-        const baseClasses = 'todo-item';
-        const priorityClass = `todo-item ${todo.priority}-priority`;
-        const completedClass = todo.status === 'completed' ? 'completed' : '';
-        return `${baseClasses} ${priorityClass} ${completedClass}`;
+    useEffect(() => {
+        const q = projectId
+            ? query(collection(db, 'todos'), where('projectId', '==', projectId), orderBy('createdAt', 'desc'))
+            : query(collection(db, 'todos'), orderBy('createdAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const todosData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Todo));
+            setTodos(todosData);
+        });
+
+        return () => unsubscribe();
+    }, [projectId]);
+
+    const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
     return (
@@ -194,6 +247,79 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
             <h2 className="todo-title">
                 {projectId ? 'Project TODOs' : 'My TODOs'}
             </h2>
+
+            {/* NEW: Filter Controls */}
+            <div className="filter-controls" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                background: 'rgba(255, 255, 255, 0.04)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            background: showCompleted ? '#4caf50' : 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        {showCompleted ? 'Show Active' : 'Show Completed'}
+                    </button>
+
+                    <select
+                        value={filterPriority}
+                        onChange={(e) => setFilterPriority(e.target.value)}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="all">All Priorities</option>
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                    </select>
+
+                    <select
+                        value={filterRepo}
+                        onChange={(e) => setFilterRepo(e.target.value)}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            cursor: 'pointer',
+                            minWidth: '150px'
+                        }}
+                    >
+                        <option value="all">All Repos</option>
+                        <option value="none">No Repo</option>
+                        {repos.map(repo => (
+                            <option key={repo.id} value={repo.id}>
+                                {repo.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
+                    Showing {filteredTodos.length} of {todos.length} todos
+                </div>
+            </div>
 
             {/* Add Todo Form */}
             <div className="todo-form">
@@ -219,9 +345,9 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                         {reposLoading ? (
                             <option disabled>Loading repos...</option>
                         ) : (
-                            repos.map(repo => ( // FIXED: Use 'repos' not 'availableRepos'
+                            repos.map(repo => (
                                 <option key={repo.id} value={repo.id}>
-                                    {repo.full_name || repo.name}
+                                    {repo.name}
                                 </option>
                             ))
                         )}
@@ -255,98 +381,146 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
 
             {/* Todo List */}
             <div className="todo-list">
-                {todos.length === 0 ? (
+                {filteredTodos.length === 0 ? (
                     <div className="todo-empty">
-                        <h3>No todos yet</h3>
-                        <p>Add your first todo to get started!</p>
+                        <h3>No todos found</h3>
+                        <p>
+                            {showCompleted
+                                ? 'No completed todos found'
+                                : 'No active todos found. Add one above!'}
+                        </p>
                     </div>
                 ) : (
-                    todos.map(todo => (
-                        <div
-                            key={todo.id}
-                            className={getTodoItemClasses(todo)}
-                        >
-                            {editingId === todo.id ? (
-                                <div className="edit-mode">
-                                    <input
-                                        type="text"
-                                        value={editData.title || todo.title}
-                                        onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                                        className="edit-input"
-                                        autoFocus
-                                    />
-                                    <div className="edit-actions">
-                                        <button
-                                            onClick={() => updateTodo(todo.id, editData)}
-                                            className="save-btn"
-                                        >
-                                            Save
-                                        </button>
-                                        <button
-                                            onClick={() => setEditingId(null)}
-                                            className="cancel-btn"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="todo-content">
-                                    <div className="todo-main">
-                                        <button
-                                            onClick={() => toggleStatus(todo)}
-                                            className={`todo-checkbox ${todo.status === 'completed' ? 'checked' : ''}`}
-                                            aria-label={todo.status === 'completed' ? 'Mark as pending' : 'Mark as completed'}
+                    filteredTodos.map(todo => {
+                        const repoColor = getTodoColor(todo);
+
+                        return (
+                            <div
+                                key={todo.id}
+                                className={getTodoItemClasses(todo)}
+                                style={{
+                                    borderLeftColor: todo.repoId ? repoColor : undefined,
+                                    borderLeftWidth: todo.repoId ? '4px' : undefined
+                                }}
+                            >
+                                {editingId === todo.id ? (
+                                    <div className="edit-mode">
+                                        <input
+                                            type="text"
+                                            value={editData.title || todo.title}
+                                            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                                            className="edit-input"
+                                            autoFocus
+                                            placeholder="Edit todo title"
                                         />
-                                        <div className="todo-info">
-                                            <div className={`todo-title ${todo.status === 'completed' ? 'completed' : ''}`}>
-                                                {todo.title}
-                                            </div>
-                                            <div className="todo-meta">
-                                                {todo.repoName && (
-                                                    <span className="repo-badge">
-                                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                                        </svg>
-                                                        {todo.repoName}
-                                                    </span>
-                                                )}
-                                                <span className={`priority-badge ${getPriorityClasses(todo.priority)}`}>
-                                                    {todo.priority}
-                                                </span>
-                                                {/* <span className="todo-date">
-                                                    {new Date(todo.createdAt).toLocaleDateString()}
-                                                </span> */}
-                                            </div>
+
+                                        {/* FIXED: Edit mode with priority field */}
+                                        <div style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
+                                            <select
+                                                value={editData.repoId || ''}
+                                                onChange={(e) => setEditData({ ...editData, repoId: e.target.value || undefined })}
+                                                className="priority-select"
+                                                style={{ flex: 1 }}
+                                            >
+                                                <option value="">No repo</option>
+                                                {repos.map(repo => (
+                                                    <option key={repo.id} value={repo.id}>
+                                                        {repo.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                            <select
+                                                value={editData.priority || todo.priority}
+                                                onChange={(e) => setEditData({ ...editData, priority: e.target.value as 'low' | 'medium' | 'high' })}
+                                                className="priority-select"
+                                                style={{ flex: 1 }}
+                                            >
+                                                <option value="low">Low Priority</option>
+                                                <option value="medium">Medium Priority</option>
+                                                <option value="high">High Priority</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="edit-actions">
+                                            <button
+                                                onClick={() => updateTodo(todo.id, editData)}
+                                                className="save-btn"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingId(null);
+                                                    setEditData({});
+                                                }}
+                                                className="cancel-btn"
+                                            >
+                                                Cancel
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="todo-actions">
-                                        <button
-                                            onClick={() => {
-                                                setEditingId(todo.id);
-                                                setEditData({ title: todo.title });
-                                            }}
-                                            className="action-btn edit-btn"
-                                            aria-label="Edit todo"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => deleteTodo(todo.id)}
-                                            className="action-btn delete-btn"
-                                            aria-label="Delete todo"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                                ) : (
+                                    <div className="todo-content">
+                                        <div className="todo-main">
+                                            <button
+                                                onClick={() => toggleStatus(todo)}
+                                                className={`todo-checkbox ${todo.status === 'completed' ? 'checked' : ''}`}
+                                                aria-label={todo.status === 'completed' ? 'Mark as pending' : 'Mark as completed'}
+                                            />
+                                            <div className="todo-info">
+                                                <div className={`todo-title ${todo.status === 'completed' ? 'completed' : ''}`}>
+                                                    {todo.title}
+                                                </div>
+                                                <div className="todo-meta">
+                                                    {todo.repoName && (
+                                                        <span
+                                                            className="repo-badge"
+                                                            style={{
+                                                                backgroundColor: hexToRgba(repoColor, 0.12),
+                                                                color: repoColor,
+                                                                borderColor: repoColor,
+                                                                borderWidth: '1px',
+                                                                borderStyle: 'solid'
+                                                            }}
+                                                        >
+                                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                            </svg>
+                                                            {getRepoDisplayName(todo.repoName)}
+                                                        </span>
+                                                    )}
+                                                    <span className={`priority-badge ${getPriorityBadgeClass(todo.priority)}`}>
+                                                        {todo.priority}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="todo-actions">
+                                            <button
+                                                onClick={() => startEditing(todo)}
+                                                className="action-btn edit-btn"
+                                                aria-label="Edit todo"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => deleteTodo(todo.id)}
+                                                className="action-btn delete-btn"
+                                                aria-label="Delete todo"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                                )}
+                            </div>
+                        );
+                    })
                 )}
             </div>
 
@@ -357,11 +531,11 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                     <span className="stat-label">Total</span>
                 </div>
                 <div className="stat-item">
-                    <span className="stat-count">{todos.filter(t => t.status === 'completed').length}</span>
+                    <span className="stat-count">{completedTodos.length}</span>
                     <span className="stat-label">Completed</span>
                 </div>
                 <div className="stat-item">
-                    <span className="stat-count">{todos.filter(t => t.status !== 'completed').length}</span>
+                    <span className="stat-count">{pendingTodos.length}</span>
                     <span className="stat-label">Pending</span>
                 </div>
             </div>
