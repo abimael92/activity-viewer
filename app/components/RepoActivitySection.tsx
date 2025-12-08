@@ -1,11 +1,10 @@
 // components/RepoActivitySection.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // Add useRef
 import './RepoActivitySection.css';
 import Tooltip from './Tooltip';
 import DateModal from "./DateModal";
-
 
 interface RepoActivity {
     name: string;
@@ -27,9 +26,24 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
     const [dates, setDates] = useState({ today: '', yesterday: '' });
     const [extraDates, setExtraDates] = useState<string[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
+    const [timeUntilRefresh, setTimeUntilRefresh] = useState(3600); // 1 hour in seconds
+    const [isManualRefresh, setIsManualRefresh] = useState(false);
 
+    // Use refs to track if refresh is manual or auto
+    const isManualRefreshRef = useRef(false);
+    const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
+    const activityDataRef = useRef(activityData);
+
+    // Format seconds to MM:SS
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const fetchRepoCommits = useCallback(async (repoName: string, since: string, until: string): Promise<number> => {
         try {
             let allCommits: unknown[] = [];
             let page = 1;
@@ -59,10 +73,21 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             console.error(`Error fetching commits for ${repoName}:`, error);
             return 0;
         }
-    };
+    }, [username]);
 
-    const fetchRepoActivity = async (refreshExtraDatesOnly = false) => {
-        if (!username) return;
+    const getExtraDateRanges = useCallback(() =>
+        extraDates.map(d => {
+            const day = new Date(d);
+            const start = new Date(day); start.setHours(0, 0, 0, 0);
+            const end = new Date(day); end.setHours(23, 59, 59, 999);
+            return { date: d, start: start.toISOString(), end: end.toISOString() };
+        }), [extraDates]);
+
+    const fetchRepoActivity = useCallback(async (refreshExtraDatesOnly = false, isManual = false) => {
+        if (isManual) {
+            setIsManualRefresh(true);
+            isManualRefreshRef.current = true;
+        }
 
         if (!refreshExtraDatesOnly) {
             setLoading(true);
@@ -120,7 +145,8 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                     yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
                 } else {
                     // When refreshing extra dates only, use existing data
-                    const existingRepo = activityData.find(r => r.name === repo.name);
+                    const existingRepo = activityDataRef.current.find(r => r.name === repo.name);
+
                     todayCommits = existingRepo?.todayCommits || 0;
                     yesterdayCommits = existingRepo?.yesterdayCommits || 0;
                 }
@@ -166,24 +192,19 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         } finally {
             if (!refreshExtraDatesOnly) {
                 setLoading(false);
+                setIsManualRefresh(false);
+                isManualRefreshRef.current = false;
             }
         }
-    };
-
-    useEffect(() => {
-        fetchRepoActivity();
-
-        // Refresh every hour
-        const interval = setInterval(fetchRepoActivity, 60 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [username]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [username, fetchRepoCommits, getExtraDateRanges]);
 
     // Add this useEffect to refresh extra dates data
     useEffect(() => {
         if (extraDates.length > 0 && activityData.length > 0) {
-            // Refresh only extra dates data when new dates are added
-            fetchRepoActivity(true);
+            fetchRepoActivity(true, false); // Add this line
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [extraDates]);
 
     // Update grid columns when extraDates changes
@@ -208,6 +229,59 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             updateGridColumns();
         }
     }, [extraDates, activityData]);
+
+    // Countdown timer effect (DOESN'T trigger auto-refresh)
+    useEffect(() => {
+        countdownIntervalRef.current = setInterval(() => {
+            setTimeUntilRefresh(prev => {
+                if (prev <= 1) {
+                    // Auto-refresh when timer hits 0
+                    if (!isManualRefreshRef.current) {
+                        fetchRepoActivity(false, false); // Auto refresh
+                    }
+                    return 3600; // Reset to 1 hour
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => {
+            if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+            }
+        };
+    }, [fetchRepoActivity]);
+
+    // Auto-refresh effect (every hour)
+    useEffect(() => {
+        autoRefreshIntervalRef.current = setInterval(() => {
+            if (!isManualRefreshRef.current) {
+                fetchRepoActivity(false, false); // Auto refresh
+            }
+        }, 60 * 60 * 1000); // 1 hour
+
+        return () => {
+            if (autoRefreshIntervalRef.current) {
+                clearInterval(autoRefreshIntervalRef.current);
+            }
+        };
+    }, [fetchRepoActivity]);
+
+    // Initial fetch
+    useEffect(() => {
+        fetchRepoActivity(false, false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [username]);
+
+    useEffect(() => {
+        activityDataRef.current = activityData;
+    }, [activityData]);
+
+    // Manual refresh handler - WON'T affect countdown
+    const handleManualRefresh = useCallback(() => {
+        fetchRepoActivity(false, true); // Manual refresh
+        // Timer continues counting down independently
+    }, [fetchRepoActivity]);
 
     const getTrendIcon = (trend: string) => {
         switch (trend) {
@@ -248,15 +322,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         });
     };
 
-    // For each extra date, compute full day range
-    const getExtraDateRanges = () =>
-        extraDates.map(d => {
-            const day = new Date(d);
-            const start = new Date(day); start.setHours(0, 0, 0, 0);
-            const end = new Date(day); end.setHours(23, 59, 59, 999);
-            return { date: d, start: start.toISOString(), end: end.toISOString() };
-        });
-
     const getCommitCountForDate = (date: string, repo: RepoActivity) => {
         return repo.extra[date] || 0;
     };
@@ -287,7 +352,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
                 <div className="date-section">
                     <button onClick={() => setModalOpen(true)}>Add Date</button>
-
 
                     <div className="date-range">
                         <Tooltip content="Full day commit count from midnight to midnight">
@@ -334,7 +398,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                             >
                                 {formatDate(d)}
                             </div>
-
                         </div>
                     ))}
 
@@ -343,7 +406,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                             Change
                         </div>
                     </Tooltip>
-
                 </div>
 
                 {/* Data Rows */}
@@ -360,7 +422,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                                 <div className="commit-column" title={`${repo.yesterdayCommits} commits`}>
                                     {repo.yesterdayCommits}
                                 </div>
-                            </ Tooltip>
+                            </Tooltip>
                             <Tooltip content={`${repo.todayCommits} commits made today`}>
                                 <div className="commit-column" >
                                     {repo.todayCommits}
@@ -386,23 +448,34 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 ) : (
                     <div className="empty-state" title="No commits were made in any repositories during the last 2 days">
                         <p>No repository activity found for the selected period.</p>
-                        <button onClick={() => fetchRepoActivity()}>Retry</button>
+                        <button onClick={handleManualRefresh}>Retry</button>
                     </div>
-                )
-                }
-            </div >
+                )}
+            </div>
 
             {/* Footer */}
-            < div className="activity-footer" >
-                <p title="Data is automatically fetched from GitHub API every hour">
-                    Updates automatically • Data refreshes hourly
-                </p>
-                <Tooltip content="Refresh repository activity data now">
-                    <button onClick={() => fetchRepoActivity()} className="refresh-btn">
-                        Refresh Now
+            <div className="activity-footer">
+                <Tooltip content="Data is automatically fetched from GitHub API">
+                    <div className="footer-info">
+                        <span className="update-status">
+                            {isManualRefresh ? 'Refreshing data...' : 'Updates automatically'}
+                        </span>
+                        <span className="countdown-timer">
+                            • Next auto-refresh in: <span className="time-remaining">{formatTime(timeUntilRefresh)}</span>
+                        </span>
+                    </div>
+                </Tooltip>
+
+                <Tooltip content="Manual refresh won't reset the auto-refresh timer">
+                    <button
+                        onClick={handleManualRefresh}
+                        className="refresh-btn"
+                        disabled={isManualRefresh}
+                    >
+                        {isManualRefresh ? 'Refreshing...' : 'Refresh Now'}
                     </button>
                 </Tooltip>
-            </div >
+            </div>
 
             <DateModal
                 open={modalOpen}
@@ -412,7 +485,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                     setModalOpen(false);
                 }}
             />
-
-        </div >
+        </div>
     );
 }
