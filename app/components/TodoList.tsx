@@ -38,8 +38,9 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editData, setEditData] = useState<Partial<Todo>>({});
     const [repoColors, setRepoColors] = useState<Record<string, string>>({});
-    const [showCompleted, setShowCompleted] = useState(false); // NEW: Filter state
-    const [filterPriority, setFilterPriority] = useState<string>('all'); // NEW: Priority filter
+    const [showCompleted, setShowCompleted] = useState(false);
+    const [filterPriority, setFilterPriority] = useState<string>('all');
+    const [filterRepo, setFilterRepo] = useState<string>('all');
 
     const fetchUserRepos = useCallback(async (username: string) => {
         if (!username.trim()) {
@@ -83,33 +84,19 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
         }
     }, []);
 
-
-    // After line 69 (after the fetchUserRepos function), add:
-    const [filterRepo, setFilterRepo] = useState<string>('all');
-
-    // Replace the duplicate filteredTodos declaration (around line 150) with:
     const filteredTodos = todos.filter(todo => {
-        // Status filter
         if (!showCompleted && todo.status === 'completed') return false;
-
-        // Priority filter
         if (filterPriority !== 'all' && todo.priority !== filterPriority) return false;
-
-        // NEW: Repo filter
         if (filterRepo !== 'all') {
             if (filterRepo === 'none') {
-                // Show only todos without repo
                 if (todo.repoId) return false;
             } else {
-                // Show only todos with specific repo
                 if (!todo.repoId || todo.repoId !== filterRepo) return false;
             }
         }
-
         return true;
     });
 
-    // NEW: Get pending and completed todos separately
     const pendingTodos = todos.filter(t => t.status !== 'completed');
     const completedTodos = todos.filter(t => t.status === 'completed');
 
@@ -150,13 +137,11 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
 
     async function addTodo(e?: MouseEvent<HTMLButtonElement>) {
         if (e) e.preventDefault();
-
         if (!newTodo.title.trim()) return;
 
         setLoading(true);
         try {
             const selectedRepo = repos.find(r => r.id === newTodo.repoId);
-
             await addDoc(collection(db, 'todos'), {
                 title: newTodo.title.trim(),
                 priority: newTodo.priority,
@@ -167,7 +152,6 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
-
             setNewTodo({ title: '', priority: 'medium', repoId: '' });
         } catch (error) {
             console.error('Error adding todo:', error);
@@ -203,7 +187,6 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
         }
     }
 
-    // NEW: Initialize edit data properly
     const startEditing = (todo: Todo) => {
         setEditingId(todo.id);
         setEditData({
@@ -248,29 +231,12 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                 {projectId ? 'Project TODOs' : 'My TODOs'}
             </h2>
 
-            {/* NEW: Filter Controls */}
-            <div className="filter-controls" style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                background: 'rgba(255, 255, 255, 0.04)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-            }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {/* Filter Controls */}
+            <div className="filter-controls">
+                <div className="filter-buttons">
                     <button
                         onClick={() => setShowCompleted(!showCompleted)}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            background: showCompleted ? '#4caf50' : 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                        }}
+                        className={`view-toggle-btn ${showCompleted ? 'active' : ''}`}
                     >
                         {showCompleted ? 'Show Active' : 'Show Completed'}
                     </button>
@@ -278,14 +244,7 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                     <select
                         value={filterPriority}
                         onChange={(e) => setFilterPriority(e.target.value)}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            cursor: 'pointer'
-                        }}
+                        className="filter-select"
                     >
                         <option value="all">All Priorities</option>
                         <option value="high">High Priority</option>
@@ -296,15 +255,7 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                     <select
                         value={filterRepo}
                         onChange={(e) => setFilterRepo(e.target.value)}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            cursor: 'pointer',
-                            minWidth: '150px'
-                        }}
+                        className="filter-select"
                     >
                         <option value="all">All Repos</option>
                         <option value="none">No Repo</option>
@@ -316,7 +267,7 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                     </select>
                 </div>
 
-                <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
+                <div className="filter-stats">
                     Showing {filteredTodos.length} of {todos.length} todos
                 </div>
             </div>
@@ -414,13 +365,11 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                                             placeholder="Edit todo title"
                                         />
 
-                                        {/* FIXED: Edit mode with priority field */}
-                                        <div style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
+                                        <div className="edit-fields">
                                             <select
                                                 value={editData.repoId || ''}
                                                 onChange={(e) => setEditData({ ...editData, repoId: e.target.value || undefined })}
                                                 className="priority-select"
-                                                style={{ flex: 1 }}
                                             >
                                                 <option value="">No repo</option>
                                                 {repos.map(repo => (
@@ -434,7 +383,6 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                                                 value={editData.priority || todo.priority}
                                                 onChange={(e) => setEditData({ ...editData, priority: e.target.value as 'low' | 'medium' | 'high' })}
                                                 className="priority-select"
-                                                style={{ flex: 1 }}
                                             >
                                                 <option value="low">Low Priority</option>
                                                 <option value="medium">Medium Priority</option>
@@ -539,6 +487,8 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                     <span className="stat-label">Pending</span>
                 </div>
             </div>
+
+
         </div>
     );
 }
