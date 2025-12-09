@@ -434,12 +434,10 @@ export default function Home() {
 
                 <RepoActivitySection className="mt-6" />
 
-                <div className="mt-8">
-                    <TodoList
-                        projectId="github-tracker"
-                        githubUsername={username}
-                    />
-                </div>
+                <TodoList
+                    projectId="github-tracker"
+                    githubUsername={username}
+                />
 
                 {fullYearRepoStats && (
                     <RepoStats

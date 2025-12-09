@@ -2592,8 +2592,6 @@ body {
 
 
 /* ===== TODO LIST STYLES ===== */
-/* ===== TODO LIST IMPROVED STYLES ===== */
-
 .todo-container {
     background: linear-gradient(135deg, rgba(20, 20, 40, 0.8), rgba(10, 10, 25, 0.9));
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3154,8 +3152,6 @@ body {
 /* Responsive Improvements */
 @media (max-width: 768px) {
     .todo-container {
-        padding: 1.5rem;
-        margin: 1rem;
         border-radius: 16px;
     }
     
