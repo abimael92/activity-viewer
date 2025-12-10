@@ -768,6 +768,14 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                         <h4 className="repo-name" style={{ color: stat.color }}>
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
+
+                                                        {/* ADD STATUS BADGES TO LIST VIEW HERE */}
+                                                        <RepoStatusBadges
+                                                            deployment={stat.deployment}
+                                                            mergeStatus={stat.mergeStatus}
+                                                            isMobile={isMobile}
+                                                        />
+
                                                         <div className="list-repo-meta">
                                                             <span>{formatDate(stat.createdAt)}</span>
                                                             <span>{getRepositoryAge(stat.createdAt)} old</span>
@@ -908,6 +916,16 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                 </div>
                                             )}
 
+                                            {/* Add merge info to tooltip */}
+                                            {stat.mergeStatus && (
+                                                <div className="mt-1">
+                                                    <div><strong>Last Merge:</strong> {stat.mergeStatus.lastMergeSuccess === null ? 'No data' : stat.mergeStatus.lastMergeSuccess ? 'Successful' : 'Failed'}</div>
+                                                    {stat.mergeStatus.lastMergeDate && (
+                                                        <div>Date: {new Date(stat.mergeStatus.lastMergeDate).toLocaleDateString()}</div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {
                                                 expandedCards.has(stat.name) && (
                                                     <div className="list-item-details">
@@ -926,6 +944,56 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             <div className="detail-item">
                                                                 <span className="detail-label">Last Commit</span>
                                                                 <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* ADD DEPLOYMENT AND MERGE DETAILS TO LIST EXPANDED VIEW */}
+                                                        {stat.deployment && stat.deployment.deployed && (
+                                                            <div className="detail-item">
+                                                                <span className="detail-label">Deployment</span>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className="detail-value">
+                                                                        <span className="font-medium">{stat.deployment.deploymentType?.toUpperCase() || 'DEPLOYED'}</span>
+                                                                        {stat.deployment.deploymentUrl && (
+                                                                            <a
+                                                                                href={stat.deployment.deploymentUrl}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="ml-2 text-blue-600 hover:underline text-sm"
+                                                                            >
+                                                                                (View Live)
+                                                                            </a>
+                                                                        )}
+                                                                    </div>
+                                                                    {stat.deployment.lastDeployment && (
+                                                                        <span className="text-xs text-gray-500">
+                                                                            Last deployed: {new Date(stat.deployment.lastDeployment).toLocaleDateString()}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {stat.mergeStatus && stat.mergeStatus.lastMergeSuccess !== null && (
+                                                            <div className="detail-item">
+                                                                <span className="detail-label">Merge Status</span>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className="detail-value">
+                                                                        Last merge: <span className={`font-medium ${stat.mergeStatus.lastMergeSuccess ? 'text-green-600' : 'text-red-600'}`}>
+                                                                            {stat.mergeStatus.lastMergeSuccess ? 'Successful' : 'Failed'}
+                                                                        </span>
+                                                                    </div>
+                                                                    {stat.mergeStatus.lastMergeDate && (
+                                                                        <span className="text-xs text-gray-500">
+                                                                            Date: {new Date(stat.mergeStatus.lastMergeDate).toLocaleDateString()}
+                                                                        </span>
+                                                                    )}
+                                                                    {stat.mergeStatus.lastMergeTitle && (
+                                                                        <span className="text-xs text-gray-500 truncate">
+                                                                            PR: {stat.mergeStatus.lastMergeTitle}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         )}
 
