@@ -1045,6 +1045,45 @@ body {
     }
 }
 
+/* Add to your global or component CSS */
+.deployment-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-right: 8px;
+}
+
+.deployment-badge.not-deployed {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.merge-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.merge-badge.success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.merge-badge.failed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.merge-badge.unknown {
+  background-color: #f3f4f6;
+  color: #6b7280
+}
+
 /* Export Controls */
 .export-controls {
     display: flex;

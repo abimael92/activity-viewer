@@ -6,7 +6,7 @@ import InactivitySections from './components/InactivitySections';
 import RepoStats from './components/RepoStats';
 import { RepoActivitySection } from './components/RepoActivitySection';
 
-
+import { getRepoStatus } from '@/lib/repoStatus';
 import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from '@/lib/github';
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 import TodoList from './components/TodoList';
@@ -71,6 +71,7 @@ const processRepoCommits = async (
     const lastDayCommits: CommitData[] = [];
 
     try {
+        const statusPromise = getRepoStatus(username, repo.name);
         while (page <= 3) {
             const commitsRes = await fetchWithAuth(
                 `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100&page=${page}`
@@ -136,6 +137,7 @@ const processRepoCommits = async (
                 streak = 0;
             }
         }
+        const { deployment, mergeStatus } = await statusPromise;
 
         return {
             repoDailyCount,
@@ -153,7 +155,9 @@ const processRepoCommits = async (
                 stars: repo.stargazers_count,
                 forks: repo.forks_count,
                 loading: false,
-                lastDayCommits: lastDayCommits.slice(0, 5)
+                lastDayCommits: lastDayCommits.slice(0, 5),
+                deployment, // Add deployment status
+                mergeStatus // Add merge status
             }
         };
     } catch (error) {

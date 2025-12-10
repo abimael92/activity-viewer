@@ -22,6 +22,29 @@ interface CommitData {
 	author?: string;
 }
 
+// Add to your types.ts file
+export interface DeploymentStatus {
+	deployed: boolean;
+	deploymentType?:
+		| 'vercel'
+		| 'netlify'
+		| 'github-pages'
+		| 'heroku'
+		| 'render'
+		| 'railway'
+		| 'other';
+	deploymentUrl?: string;
+	lastDeployment?: string;
+}
+
+export interface MergeStatus {
+	lastMergeSuccess: boolean | null; // null means no merge data
+	lastMergeDate?: string;
+	lastMergeTitle?: string;
+	mergeFailureCount?: number;
+	lastMergeCommitHash?: string;
+}
+
 export interface RepoStat {
 	name: string;
 	maxCommits: number;
@@ -38,6 +61,8 @@ export interface RepoStat {
 	expanded?: boolean;
 	loading: boolean;
 	lastDayCommits?: CommitData[];
+	deployment?: DeploymentStatus; // Add this
+	mergeStatus?: MergeStatus; // Add this
 }
 
 export interface InactiveRepo {
