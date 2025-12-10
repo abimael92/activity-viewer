@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RepoStat } from '@/types';
+import { RepoStat, DeploymentStatus, MergeStatus } from '@/types';
 import Tooltip from './Tooltip';
 
 interface RepoStatsProps {
@@ -9,6 +9,128 @@ interface RepoStatsProps {
     loading: boolean,
     username: string;
 }
+
+const DeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
+    if (!deployment) return null;
+
+    if (!deployment.deployed) {
+        return (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Not Deployed
+            </span>
+        );
+    }
+
+    const platformColors: Record<string, string> = {
+        'vercel': 'bg-purple-100 text-purple-800 border border-purple-200',
+        'netlify': 'bg-teal-100 text-teal-800 border border-teal-200',
+        'github-pages': 'bg-green-100 text-green-800 border border-green-200',
+        'heroku': 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+        'render': 'bg-blue-100 text-blue-800 border border-blue-200',
+        'railway': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+        'other': 'bg-gray-100 text-gray-800 border border-gray-200'
+    };
+
+    const platformNames: Record<string, string> = {
+        'vercel': 'Vercel',
+        'netlify': 'Netlify',
+        'github-pages': 'GitHub Pages',
+        'heroku': 'Heroku',
+        'render': 'Render',
+        'railway': 'Railway',
+        'other': 'Deployed'
+    };
+
+    const className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all hover:scale-105 ${platformColors[deployment.deploymentType || 'other']}`;
+
+    if (deployment.deploymentUrl) {
+        return (
+            <a
+                href={deployment.deploymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${className} hover:opacity-80`}
+                title={`View live deployment on ${platformNames[deployment.deploymentType || 'other']}`}
+            >
+                <span className="mr-1">🚀</span>
+                {platformNames[deployment.deploymentType || 'other']}
+                <span className="ml-1">✓</span>
+            </a>
+        );
+    }
+
+    return (
+        <span className={className} title={`Deployed on ${platformNames[deployment.deploymentType || 'other']}`}>
+            <span className="mr-1">🚀</span>
+            {platformNames[deployment.deploymentType || 'other']}
+        </span>
+    );
+};
+
+const MergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
+    if (!mergeStatus) return null;
+
+    if (mergeStatus.lastMergeSuccess === null) {
+        return (
+            <span
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200"
+                title="No recent merges detected"
+            >
+                <span className="mr-1">🔄</span>
+                No Merges
+            </span>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-1">
+            <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${mergeStatus.lastMergeSuccess
+                    ? 'bg-green-100 text-green-800 border-green-200'
+                    : 'bg-red-100 text-red-800 border-red-200'
+                    }`}
+                title={
+                    mergeStatus.lastMergeSuccess
+                        ? `Last merge successful on ${mergeStatus.lastMergeDate ? new Date(mergeStatus.lastMergeDate).toLocaleDateString() : 'unknown date'}`
+                        : 'Last merge failed'
+                }
+            >
+                <span className="mr-1">{mergeStatus.lastMergeSuccess ? '✅' : '❌'}</span>
+                Merge {mergeStatus.lastMergeSuccess ? '✓' : '✗'}
+            </span>
+            {mergeStatus.lastMergeDate && (
+                <span className="text-xs text-gray-500 hidden md:inline">
+                    {new Date(mergeStatus.lastMergeDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                    })}
+                </span>
+            )}
+            {mergeStatus.mergeFailureCount && mergeStatus.mergeFailureCount > 0 && !mergeStatus.lastMergeSuccess && (
+                <span className="text-xs text-red-500 ml-1 hidden md:inline">
+                    ({mergeStatus.mergeFailureCount} fail{mergeStatus.mergeFailureCount > 1 ? 's' : ''})
+                </span>
+            )}
+        </div>
+    );
+};
+
+// Add a combined status component for the card header
+const RepoStatusBadges: React.FC<{
+    deployment?: DeploymentStatus;
+    mergeStatus?: MergeStatus;
+    isMobile: boolean;
+}> = ({ deployment, mergeStatus, isMobile }) => {
+    if (!deployment && !mergeStatus) return null;
+
+    return (
+        <div className={`flex ${isMobile ? 'flex-col gap-1' : 'items-center gap-2'} mt-2`}>
+            {deployment && <DeploymentBadge deployment={deployment} />}
+            {mergeStatus && <MergeStatusBadge mergeStatus={mergeStatus} />}
+        </div>
+    );
+};
+
 
 export default function RepoStats({ stats, loading, username }: RepoStatsProps) {
     const [view, setView] = useState<'grid' | 'list'>('list');
@@ -314,6 +436,14 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                         <h4 className="repo-name" style={{ color: stat.color }}>
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
+
+                                                        {/* ADD STATUS BADGES HERE */}
+                                                        <RepoStatusBadges
+                                                            deployment={stat.deployment}
+                                                            mergeStatus={stat.mergeStatus}
+                                                            isMobile={isMobile}
+                                                        />
+
                                                         <div className="repo-meta">
                                                             <div className="repo-dates">
                                                                 <span>{formatDate(stat.createdAt)}</span>
@@ -366,6 +496,29 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                     <div>Total Commits: {stat.totalCommits}</div>
                                                     <div>Best Streak: {stat.maxConsecutiveDays} days</div>
                                                     {stat.lastCommitDate && (<div>Last Commit: {formatDateTime(stat.lastCommitDate)}</div>)}
+
+                                                    {/* Add deployment info to tooltip */}
+                                                    {stat.deployment && (
+                                                        <div className="mt-2 pt-2 border-t border-gray-200">
+                                                            <div><strong>Deployment:</strong> {stat.deployment.deployed ? 'Yes' : 'No'}</div>
+                                                            {stat.deployment.deployed && stat.deployment.deploymentType && (
+                                                                <div>Platform: {stat.deployment.deploymentType}</div>
+                                                            )}
+                                                            {stat.deployment.deploymentUrl && (
+                                                                <div>URL: <a href={stat.deployment.deploymentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{stat.deployment.deploymentUrl}</a></div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Add merge info to tooltip */}
+                                                    {stat.mergeStatus && (
+                                                        <div className="mt-1">
+                                                            <div><strong>Last Merge:</strong> {stat.mergeStatus.lastMergeSuccess === null ? 'No data' : stat.mergeStatus.lastMergeSuccess ? 'Successful' : 'Failed'}</div>
+                                                            {stat.mergeStatus.lastMergeDate && (
+                                                                <div>Date: {new Date(stat.mergeStatus.lastMergeDate).toLocaleDateString()}</div>
+                                                            )}
+                                                        </div>
+                                                    )}
 
                                                 </div>
                                             )}
@@ -441,6 +594,56 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                     <div className="detail-item">
                                                         <span className="detail-label">Last Commit</span>
                                                         <span className="detail-value">{formatDateTime(stat.lastCommitDate)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* ADD DEPLOYMENT AND MERGE DETAILS IN EXPANDED VIEW */}
+                                                {stat.deployment && stat.deployment.deployed && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Deployment</span>
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="detail-value">
+                                                                <span className="font-medium">{stat.deployment.deploymentType?.toUpperCase() || 'DEPLOYED'}</span>
+                                                                {stat.deployment.deploymentUrl && (
+                                                                    <a
+                                                                        href={stat.deployment.deploymentUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="ml-2 text-blue-600 hover:underline text-sm"
+                                                                    >
+                                                                        (View Live)
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                            {stat.deployment.lastDeployment && (
+                                                                <span className="text-xs text-gray-500">
+                                                                    Last deployed: {new Date(stat.deployment.lastDeployment).toLocaleDateString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {stat.mergeStatus && stat.mergeStatus.lastMergeSuccess !== null && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Merge Status</span>
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="detail-value">
+                                                                Last merge: <span className={`font-medium ${stat.mergeStatus.lastMergeSuccess ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {stat.mergeStatus.lastMergeSuccess ? 'Successful' : 'Failed'}
+                                                                </span>
+                                                            </div>
+                                                            {stat.mergeStatus.lastMergeDate && (
+                                                                <span className="text-xs text-gray-500">
+                                                                    Date: {new Date(stat.mergeStatus.lastMergeDate).toLocaleDateString()}
+                                                                </span>
+                                                            )}
+                                                            {stat.mergeStatus.lastMergeTitle && (
+                                                                <span className="text-xs text-gray-500 truncate">
+                                                                    PR: {stat.mergeStatus.lastMergeTitle}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )}
 
