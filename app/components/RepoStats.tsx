@@ -492,7 +492,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const [visibleCount, setVisibleCount] = useState<number>(6);
     const [isMobile, setIsMobile] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
-    const [showEnhancedBadges, setShowEnhancedBadges] = useState(true); // NEW: Toggle for enhanced badges
 
     // Detect mobile screen size
     useEffect(() => {
@@ -711,15 +710,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                     </span>
                                     <span className="summary-label">Total Commits</span>
                                 </span>
-                                {/* NEW: Enhanced badges toggle */}
-                                <div className="summary-item">
-                                    <button
-                                        onClick={() => setShowEnhancedBadges(!showEnhancedBadges)}
-                                        className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                                    >
-                                        {showEnhancedBadges ? 'Enhanced View' : 'Simple View'}
-                                    </button>
-                                </div>
                             </div>
                         </div>
 
@@ -813,20 +803,13 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
 
-                                                        {/* ENHANCED: Use enhanced badges if enabled */}
-                                                        {showEnhancedBadges ? (
-                                                            <EnhancedRepoStatusBadges
-                                                                deployment={stat.deployment}
-                                                                mergeStatus={stat.mergeStatus}
-                                                                isMobile={isMobile}
-                                                            />
-                                                        ) : (
-                                                            <RepoStatusBadges
-                                                                deployment={stat.deployment}
-                                                                mergeStatus={stat.mergeStatus}
-                                                                isMobile={isMobile}
-                                                            />
-                                                        )}
+                                                        {/* badges if enabled */}
+
+                                                        <RepoStatusBadges
+                                                            deployment={stat.deployment}
+                                                            mergeStatus={stat.mergeStatus}
+                                                            isMobile={isMobile}
+                                                        />
 
                                                         <div className="repo-meta">
                                                             <div className="repo-dates">
@@ -1171,19 +1154,11 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                         </h4>
 
                                                         {/* ENHANCED: Use enhanced badges if enabled */}
-                                                        {showEnhancedBadges ? (
-                                                            <EnhancedRepoStatusBadges
-                                                                deployment={stat.deployment}
-                                                                mergeStatus={stat.mergeStatus}
-                                                                isMobile={isMobile}
-                                                            />
-                                                        ) : (
-                                                            <RepoStatusBadges
-                                                                deployment={stat.deployment}
-                                                                mergeStatus={stat.mergeStatus}
-                                                                isMobile={isMobile}
-                                                            />
-                                                        )}
+                                                        <RepoStatusBadges
+                                                            deployment={stat.deployment}
+                                                            mergeStatus={stat.mergeStatus}
+                                                            isMobile={isMobile}
+                                                        />
 
                                                         <div className="list-repo-meta">
                                                             <span>{formatDate(stat.createdAt)}</span>
