@@ -1,7 +1,7 @@
 // components/TodoList.tsx
 'use client';
 
-import { useState, useEffect, useCallback, MouseEvent } from 'react';
+import { useState, useEffect, useCallback, MouseEvent, useMemo } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Todo } from '@/types/todo';
@@ -211,6 +211,17 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
     const hasMoreTodos = sortedTodos.length > visibleCount;
 
     useEffect(() => {
+        const sorted = [...filteredTodos].sort((a, b) => {
+            return priorityOrder[a.priority] - priorityOrder[b.priority];
+        });
+
+        // Only update if the sorted array actually changed
+        if (JSON.stringify(sorted) !== JSON.stringify(sortedTodos)) {
+            setSortedTodos(sorted);
+        }
+    }, [filteredTodos]);
+
+    useEffect(() => {
         if (githubUsername) {
             fetchUserRepos(githubUsername);
         }
@@ -232,12 +243,7 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
         return () => unsubscribe();
     }, [projectId]);
 
-    useEffect(() => {
-        const sorted = [...filteredTodos].sort((a, b) => {
-            return priorityOrder[a.priority] - priorityOrder[b.priority];
-        });
-        setSortedTodos(sorted);
-    }, [filteredTodos]);
+
 
 
 
