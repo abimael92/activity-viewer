@@ -10,7 +10,6 @@ interface RepoStatsProps {
     username: string;
 }
 
-// ========== NEW COMPONENT: Deployment Status Card ==========
 const DeploymentStatusCard: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
     if (!deployment) return null;
 
@@ -83,7 +82,6 @@ const DeploymentStatusCard: React.FC<{ deployment?: DeploymentStatus }> = ({ dep
     );
 };
 
-// ========== NEW COMPONENT: Merge Status Card ==========
 const MergeStatusCard: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
     if (!mergeStatus) return null;
 
@@ -154,7 +152,6 @@ const MergeStatusCard: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus 
     );
 };
 
-// ========== NEW COMPONENT: Status Panel ==========
 const RepoStatusPanel: React.FC<{ stats: RepoStat[] }> = ({ stats }) => {
     const deploymentCount = stats.filter(s => s.deployment?.deployed).length;
     const mergeSuccessCount = stats.filter(s => s.mergeStatus?.lastMergeSuccess).length;
@@ -214,27 +211,14 @@ const RepoStatusPanel: React.FC<{ stats: RepoStat[] }> = ({ stats }) => {
     );
 };
 
-// ========== NEW COMPONENT: Enhanced Deployment Badge with Tag ==========
-const EnhancedDeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
-    if (!deployment) return null;
 
-    if (!deployment.deployed) {
-        return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
-                Not Deployed
-            </span>
-        );
-    }
+const DeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
+    // Only show if deployed
+    if (!deployment || !deployment.deployed) return null;
 
-    const platformColors: Record<string, string> = {
-        'vercel': 'bg-purple-100 text-purple-800 border border-purple-300 hover:bg-purple-200',
-        'netlify': 'bg-teal-100 text-teal-800 border border-teal-300 hover:bg-teal-200',
-        'github-pages': 'bg-green-100 text-green-800 border border-green-300 hover:bg-green-200',
-        'heroku': 'bg-indigo-100 text-indigo-800 border border-indigo-300 hover:bg-indigo-200',
-        'render': 'bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200',
-        'railway': 'bg-yellow-100 text-yellow-800 border border-yellow-300 hover:bg-yellow-200',
-        'other': 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
-    };
+    const platformClass = deployment.deploymentType
+        ? `deployment-badge deployment-badge--${deployment.deploymentType}`
+        : 'deployment-badge deployment-badge--other';
 
     const platformNames: Record<string, string> = {
         'vercel': 'Vercel',
@@ -246,16 +230,14 @@ const EnhancedDeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ 
         'other': 'Deployed'
     };
 
-    const className = `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all hover:scale-105 ${platformColors[deployment.deploymentType || 'other']}`;
-
-    // Enhanced badge with tag
     const badgeContent = (
-        <span className="flex items-center gap-1">
-            <span className="font-semibold">🚀</span>
-            <span className="font-bold">{platformNames[deployment.deploymentType || 'other']}</span>
-            <span className="ml-1 text-xs bg-white px-1.5 py-0.5 rounded-full font-bold text-green-700">
-                DEPLOYED
+        <span className="deployment-badge__content">
+            <span className="deployment-badge__tag">DEPLOYED</span> 
+            <span className="deployment-badge__platform">
+             {platformNames[deployment.deploymentType || 'other']} 
             </span>
+            
+          
         </span>
     );
 
@@ -265,40 +247,27 @@ const EnhancedDeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ 
                 href={deployment.deploymentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`${className} hover:opacity-90 hover:shadow-md transition-all duration-200`}
+                className={`${platformClass} deployment-badge--link`}
                 title={`View live deployment on ${platformNames[deployment.deploymentType || 'other']}`}
             >
                 {badgeContent}
                 {deployment.deploymentType === 'vercel' && (
-                    <span className="ml-2 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                        ↗
-                    </span>
+                    <span className="deployment-badge__icon">↗</span>
                 )}
             </a>
         );
     }
 
     return (
-        <span className={className} title={`Deployed on ${platformNames[deployment.deploymentType || 'other']}`}>
+        <span className={platformClass} title={`Deployed on ${platformNames[deployment.deploymentType || 'other']}`}>
             {badgeContent}
         </span>
     );
 };
 
-// ========== NEW COMPONENT: Enhanced Merge Badge with Date ==========
-const EnhancedMergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
-    if (!mergeStatus) return null;
-
-    if (mergeStatus.lastMergeSuccess === null) {
-        return (
-            <span
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-300"
-                title="No recent merges detected"
-            >
-                <span className="font-semibold">No Merges</span>
-            </span>
-        );
-    }
+const MergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
+    // Only show if there's a recent merge
+    if (!mergeStatus || !mergeStatus.lastMergeDate) return null;
 
     const formatMergeDate = (date: string) => {
         const mergeDate = new Date(date);
@@ -307,160 +276,41 @@ const EnhancedMergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mer
 
         if (diffDays === 0) return 'Today';
         if (diffDays === 1) return 'Yesterday';
-        if (diffDays < 7) return `${diffDays} days ago`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
         return mergeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
+    const statusClass = mergeStatus.lastMergeSuccess
+        ? 'merge-badge merge-badge--success'
+        : 'merge-badge merge-badge--failed';
+
     return (
-        <div className="flex items-center gap-2">
+        <div className="merge-badge-container">
             <span
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border transition-all hover:scale-105 ${mergeStatus.lastMergeSuccess
-                    ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                    : 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
-                    }`}
+                className={statusClass}
                 title={
                     mergeStatus.lastMergeSuccess
                         ? `Last merge successful on ${mergeStatus.lastMergeDate ? new Date(mergeStatus.lastMergeDate).toLocaleDateString() : 'unknown date'}`
                         : 'Last merge failed'
                 }
             >
-                <span className="font-bold">{mergeStatus.lastMergeSuccess ? '✓' : '✗'}</span>
-                <span className="ml-1 font-semibold">Merge</span>
-                <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-bold bg-white">
-                    {mergeStatus.lastMergeSuccess ? 'SUCCESS' : 'FAILED'}
-                </span>
+                <span className="merge-badge__icon">{mergeStatus.lastMergeSuccess ? '✓' : '✗'}</span>
+                <span className="merge-badge__text">Merge</span>
             </span>
+
             {mergeStatus.lastMergeDate && (
-                <span className="text-sm text-gray-600 font-medium hidden md:inline bg-gray-50 px-2 py-1 rounded">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="inline mr-1">
+                <span className="merge-date">
+                    <svg className="merge-date__icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    {formatMergeDate(mergeStatus.lastMergeDate)}
+                    <span className="merge-date__text">{formatMergeDate(mergeStatus.lastMergeDate)}</span>
                 </span>
             )}
+
             {mergeStatus.mergeFailureCount && mergeStatus.mergeFailureCount > 0 && !mergeStatus.lastMergeSuccess && (
-                <span className="text-sm text-red-600 font-medium ml-1 hidden md:inline bg-red-50 px-2 py-1 rounded">
-                    ({mergeStatus.mergeFailureCount} fail{mergeStatus.mergeFailureCount > 1 ? 's' : ''})
-                </span>
-            )}
-        </div>
-    );
-};
-
-// ========== NEW COMPONENT: Enhanced Repo Status Badges ==========
-const EnhancedRepoStatusBadges: React.FC<{
-    deployment?: DeploymentStatus;
-    mergeStatus?: MergeStatus;
-    isMobile: boolean;
-}> = ({ deployment, mergeStatus, isMobile }) => {
-    if (!deployment && !mergeStatus) return null;
-
-    return (
-        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-3'} mt-3`}>
-            {deployment && <EnhancedDeploymentBadge deployment={deployment} />}
-            {mergeStatus && <EnhancedMergeStatusBadge mergeStatus={mergeStatus} />}
-        </div>
-    );
-};
-
-// ========== ORIGINAL COMPONENTS (keep for backward compatibility) ==========
-const DeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
-    if (!deployment) return null;
-
-    if (!deployment.deployed) {
-        return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                Not Deployed
-            </span>
-        );
-    }
-
-    const platformColors: Record<string, string> = {
-        'vercel': 'bg-purple-100 text-purple-800 border border-purple-200',
-        'netlify': 'bg-teal-100 text-teal-800 border border-teal-200',
-        'github-pages': 'bg-green-100 text-green-800 border border-green-200',
-        'heroku': 'bg-indigo-100 text-indigo-800 border border-indigo-200',
-        'render': 'bg-blue-100 text-blue-800 border border-blue-200',
-        'railway': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-        'other': 'bg-gray-100 text-gray-800 border border-gray-200'
-    };
-
-    const platformNames: Record<string, string> = {
-        'vercel': 'Vercel',
-        'netlify': 'Netlify',
-        'github-pages': 'GitHub Pages',
-        'heroku': 'Heroku',
-        'render': 'Render',
-        'railway': 'Railway',
-        'other': 'Deployed'
-    };
-
-    const className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all hover:scale-105 ${platformColors[deployment.deploymentType || 'other']}`;
-
-    if (deployment.deploymentUrl) {
-        return (
-            <a
-                href={deployment.deploymentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${className} hover:opacity-80`}
-                title={`View live deployment on ${platformNames[deployment.deploymentType || 'other']}`}
-            >
-                <span className="mr-1">🚀</span>
-                {platformNames[deployment.deploymentType || 'other']}
-                <span className="ml-1">✓</span>
-            </a>
-        );
-    }
-
-    return (
-        <span className={className} title={`Deployed on ${platformNames[deployment.deploymentType || 'other']}`}>
-            {platformNames[deployment.deploymentType || 'other']}
-        </span>
-    );
-};
-
-const MergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
-    if (!mergeStatus) return null;
-
-    if (mergeStatus.lastMergeSuccess === null) {
-        return (
-            <span
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200"
-                title="No recent merges detected"
-            >
-                No Merges
-            </span>
-        );
-    }
-
-    return (
-        <div className="flex items-center gap-1">
-            <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${mergeStatus.lastMergeSuccess
-                    ? 'bg-green-100 text-green-800 border-green-200'
-                    : 'bg-red-100 text-red-800 border-red-200'
-                    }`}
-                title={
-                    mergeStatus.lastMergeSuccess
-                        ? `Last merge successful on ${mergeStatus.lastMergeDate ? new Date(mergeStatus.lastMergeDate).toLocaleDateString() : 'unknown date'}`
-                        : 'Last merge failed'
-                }
-            >
-                Merge
-            </span>
-            {mergeStatus.lastMergeDate && (
-                <span className="text-xs text-gray-500 hidden md:inline">
-                    {new Date(mergeStatus.lastMergeDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric'
-                    })}
-                </span>
-            )}
-            {mergeStatus.mergeFailureCount && mergeStatus.mergeFailureCount > 0 && !mergeStatus.lastMergeSuccess && (
-                <span className="text-xs text-red-500 ml-1 hidden md:inline">
+                <span className="merge-failure">
                     ({mergeStatus.mergeFailureCount} fail{mergeStatus.mergeFailureCount > 1 ? 's' : ''})
                 </span>
             )}
@@ -477,7 +327,7 @@ const RepoStatusBadges: React.FC<{
     if (!deployment && !mergeStatus) return null;
 
     return (
-        <div className={`flex ${isMobile ? 'flex-col gap-1' : 'items-center gap-2'} mt-2`}>
+        <div className={`repo-status-badges ${isMobile ? 'repo-status-badges--mobile' : ''}`}>
             {deployment && <DeploymentBadge deployment={deployment} />}
             {mergeStatus && <MergeStatusBadge mergeStatus={mergeStatus} />}
         </div>
@@ -803,13 +653,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
 
-                                                        {/* badges if enabled */}
-
-                                                        <RepoStatusBadges
-                                                            deployment={stat.deployment}
-                                                            mergeStatus={stat.mergeStatus}
-                                                            isMobile={isMobile}
-                                                        />
 
                                                         <div className="repo-meta">
                                                             <div className="repo-dates">
@@ -829,6 +672,15 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                                 </span>
                                                             )}
                                                         </div>
+                                                    </div>
+
+                                                    {/* Move badges OUTSIDE of repo-title */}
+                                                    <div className="card-badges-container">
+                                                        <RepoStatusBadges
+                                                            deployment={stat.deployment}
+                                                            mergeStatus={stat.mergeStatus}
+                                                            isMobile={isMobile}
+                                                        />
                                                     </div>
                                                 </div>
 
@@ -1153,13 +1005,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
 
-                                                        {/* ENHANCED: Use enhanced badges if enabled */}
-                                                        <RepoStatusBadges
-                                                            deployment={stat.deployment}
-                                                            mergeStatus={stat.mergeStatus}
-                                                            isMobile={isMobile}
-                                                        />
-
                                                         <div className="list-repo-meta">
                                                             <span>{formatDate(stat.createdAt)}</span>
                                                             <span>{getRepositoryAge(stat.createdAt)} old</span>
@@ -1176,6 +1021,12 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                                 </span>
                                                             )}
                                                         </div>
+                                                        {/* ENHANCED: Use enhanced badges if enabled */}
+                                                        <RepoStatusBadges
+                                                            deployment={stat.deployment}
+                                                            mergeStatus={stat.mergeStatus}
+                                                            isMobile={isMobile}
+                                                        />
                                                     </div>
                                                 </div>
 
@@ -1273,6 +1124,8 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             </div>
                                                         )}
                                                     </div>
+                                                    
+                                           
                                                 </div>
 
                                                 <div className="list-actions">

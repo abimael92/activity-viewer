@@ -535,7 +535,6 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
                 </div>
             </div>
 
-
         </div>
     );
 }

@@ -4022,3 +4022,238 @@ body {
 .show-less-btn:hover {
     background-color: #4b5563;
 }
+
+
+
+
+
+
+
+
+
+/* Deployment Badge Styles */
+.deployment-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.deployment-badge--link {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.deployment-badge--link:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.deployment-badge__content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.deployment-badge__platform {
+    font-weight: 700;
+}
+
+.deployment-badge__tag {
+    background: white;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.deployment-badge__icon {
+    margin-left: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Deployment Platform Colors */
+.deployment-badge--vercel {
+    background: rgba(168, 85, 247, 0.1); /* purple-100 */
+    color: #6b21a8; /* purple-800 */
+    border-color: rgba(168, 85, 247, 0.3); /* purple-300 */
+}
+
+.deployment-badge--vercel .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+.deployment-badge--netlify {
+    background: rgba(20, 184, 166, 0.1); /* teal-100 */
+    color: #115e59; /* teal-800 */
+    border-color: rgba(20, 184, 166, 0.3); /* teal-300 */
+}
+
+.deployment-badge--netlify .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+.deployment-badge--github-pages {
+    background: rgba(34, 197, 94, 0.1); /* green-100 */
+    color: #166534; /* green-800 */
+    border-color: rgba(34, 197, 94, 0.3); /* green-300 */
+}
+
+.deployment-badge--github-pages .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+.deployment-badge--heroku {
+    background: rgba(99, 102, 241, 0.1); /* indigo-100 */
+    color: #3730a3; /* indigo-800 */
+    border-color: rgba(99, 102, 241, 0.3); /* indigo-300 */
+}
+
+.deployment-badge--heroku .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+.deployment-badge--render {
+    background: rgba(59, 130, 246, 0.1); /* blue-100 */
+    color: #1e40af; /* blue-800 */
+    border-color: rgba(59, 130, 246, 0.3); /* blue-300 */
+}
+
+.deployment-badge--render .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+.deployment-badge--railway {
+    background: rgba(234, 179, 8, 0.1); /* yellow-100 */
+    color: #854d0e; /* yellow-800 */
+    border-color: rgba(234, 179, 8, 0.3); /* yellow-300 */
+}
+
+.deployment-badge--railway .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+.deployment-badge--other {
+    background: rgba(107, 114, 128, 0.1); /* gray-100 */
+    color: #1f2937; /* gray-800 */
+    border-color: rgba(107, 114, 128, 0.3); /* gray-300 */
+}
+
+.deployment-badge--other .deployment-badge__tag {
+    color: #065f46; /* green-700 */
+}
+
+/* Merge Badge Styles */
+.merge-badge-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.merge-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid;
+    transition: all 0.2s ease;
+    gap: 4px;
+}
+
+.merge-badge:hover {
+    transform: translateY(-1px);
+}
+
+.merge-badge--success {
+    background: rgba(34, 197, 94, 0.1); /* green-100 */
+    color: #166534; /* green-800 */
+    border-color: rgba(34, 197, 94, 0.3); /* green-300 */
+}
+
+.merge-badge--failed {
+    background: rgba(239, 68, 68, 0.1); /* red-100 */
+    color: #991b1b; /* red-800 */
+    border-color: rgba(239, 68, 68, 0.3); /* red-300 */
+}
+
+.merge-badge__icon {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.merge-badge__text {
+    font-weight: 600;
+}
+
+.merge-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #6b7280; /* gray-600 */
+    background: #f9fafb; /* gray-50 */
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.merge-date__icon {
+    width: 12px;
+    height: 12px;
+}
+
+.merge-date__text {
+    font-size: 11px;
+}
+
+.merge-failure {
+    font-size: 12px;
+    color: #dc2626; /* red-600 */
+    font-weight: 500;
+    background: rgba(239, 68, 68, 0.1); /* red-50 */
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .deployment-badge,
+    .merge-badge {
+        padding: 3px 8px;
+        font-size: 12px;
+    }
+    
+    .deployment-badge__tag {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+    
+    .merge-date,
+    .merge-failure {
+        display: none;
+    }
+}
+
+/* Repo Status Badges Container */
+.repo-status-badges {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.repo-status-badges--mobile {
+    gap: 8px;
+    margin-top: 6px;
+}
