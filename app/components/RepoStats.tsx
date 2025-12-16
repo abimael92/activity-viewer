@@ -465,6 +465,15 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     };
 
     const sortedStats = [...stats].sort((a, b) => {
+        console.log(`Sorting by: ${sortBy}`, {
+            a: a.name,
+            b: b.name,
+            aDeployed: a.deployment?.deployed,
+            bDeployed: b.deployment?.deployed,
+            aLastDeploy: a.deployment?.lastDeployment,
+            bLastDeploy: b.deployment?.lastDeployment
+        });
+
         switch (sortBy) {
             case 'commits':
                 return b.totalCommits - a.totalCommits;
@@ -473,6 +482,60 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                     new Date(a.lastCommitDate || a.createdAt).getTime();
             case 'streak':
                 return b.maxConsecutiveDays - a.maxConsecutiveDays;
+            case 'deployed':
+                // Sort by deployment status: deployed first, then not deployed
+                const aDeployed = a.deployment?.deployed ? 1 : 0;
+                const bDeployed = b.deployment?.deployed ? 1 : 0;
+                console.log('deployed sort:', {
+                    a: a.name, aDeployed,
+                    b: b.name, bDeployed,
+                    result: bDeployed - aDeployed
+                });
+
+                if (bDeployed !== aDeployed) return bDeployed - aDeployed;
+
+                // If same deployment status, sort by last deployment date
+                if (a.deployment?.lastDeployment && b.deployment?.lastDeployment) {
+                    const aDate = new Date(a.deployment.lastDeployment).getTime();
+                    const bDate = new Date(b.deployment.lastDeployment).getTime();
+                    console.log('lastDeployment sort:', {
+                        a: a.name, aDate: a.deployment.lastDeployment,
+                        b: b.name, bDate: b.deployment.lastDeployment,
+                        result: bDate - aDate
+                    });
+                    return bDate - aDate;
+                }
+                const fallback = (b.deployment?.lastDeployment ? 1 : 0) - (a.deployment?.lastDeployment ? 1 : 0);
+                console.log('fallback sort:', { a: a.name, b: b.name, result: fallback });
+                return fallback;
+            case 'merge':
+                // Sort by merge success status: successful first, then failed
+                const aMergeSuccess = a.mergeStatus?.lastMergeSuccess === true ? 1 :
+                    a.mergeStatus?.lastMergeSuccess === false ? 0 : -1;
+                const bMergeSuccess = b.mergeStatus?.lastMergeSuccess === true ? 1 :
+                    b.mergeStatus?.lastMergeSuccess === false ? 0 : -1;
+                console.log('merge sort:', {
+                    a: a.name, aMergeSuccess,
+                    b: b.name, bMergeSuccess,
+                    result: bMergeSuccess - aMergeSuccess
+                });
+
+                if (bMergeSuccess !== aMergeSuccess) return bMergeSuccess - aMergeSuccess;
+
+                // If same merge status, sort by last merge date
+                if (a.mergeStatus?.lastMergeDate && b.mergeStatus?.lastMergeDate) {
+                    const aDate = new Date(a.mergeStatus.lastMergeDate).getTime();
+                    const bDate = new Date(b.mergeStatus.lastMergeDate).getTime();
+                    console.log('lastMergeDate sort:', {
+                        a: a.name, aDate: a.mergeStatus.lastMergeDate,
+                        b: b.name, bDate: b.mergeStatus.lastMergeDate,
+                        result: bDate - aDate
+                    });
+                    return bDate - aDate;
+                }
+                const mergeFallback = (b.mergeStatus?.lastMergeDate ? 1 : 0) - (a.mergeStatus?.lastMergeDate ? 1 : 0);
+                console.log('merge fallback sort:', { a: a.name, b: b.name, result: mergeFallback });
+                return mergeFallback;
             default:
                 return a.name.localeCompare(b.name);
         }
@@ -614,7 +677,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                             <div className={`stats-grid ${isMobile ? 'mobile-grid' : ''}`}>
                                 {visibleStats.map((stat) => (
                                     <div key={stat.name} className={`stat-card ${expandedCards.has(stat.name) ? 'expanded' : ''}`}>
-
                                         {/* Add tooltip wrapper around the main card content */}
                                         <div className="tooltip-wrapper">
                                             <div
@@ -638,11 +700,11 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                                 fontSize: '28px',
                                                                 color: stat.color,
                                                                 textShadow: `
-                                                                -1px -1px 0 black,
-                                                                1px -1px 0 black,
-                                                                -1px  1px 0 black,
-                                                                1px  1px 0 black
-                                                                `
+                                        -1px -1px 0 black,
+                                        1px -1px 0 black,
+                                        -1px  1px 0 black,
+                                        1px  1px 0 black
+                                        `
                                                             }}
                                                         >
                                                             {getRepoInitials(stat.name)}
@@ -653,7 +715,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
 
-
+                                                        {/* Repository age and language - FIRST */}
                                                         <div className="repo-meta">
                                                             <div className="repo-dates">
                                                                 <span>{formatDate(stat.createdAt)}</span>
@@ -672,15 +734,15 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                                 </span>
                                                             )}
                                                         </div>
-                                                    </div>
 
-                                                    {/* Move badges OUTSIDE of repo-title */}
-                                                    <div className="card-badges-container">
-                                                        <RepoStatusBadges
-                                                            deployment={stat.deployment}
-                                                            mergeStatus={stat.mergeStatus}
-                                                            isMobile={isMobile}
-                                                        />
+                                                        {/* Deployment and merge badges - BELOW repo-meta */}
+                                                        <div className="repo-status-badges">
+                                                            <RepoStatusBadges
+                                                                deployment={stat.deployment}
+                                                                mergeStatus={stat.mergeStatus}
+                                                                isMobile={isMobile}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
 
