@@ -220,6 +220,15 @@
     margin: 0;
 }
 
+.time-remaining {
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #646cff, #00d4aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 
 .refresh-btn {
     background: rgba(100, 108, 255, 0.2);
