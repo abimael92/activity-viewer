@@ -438,11 +438,6 @@ export default function Home() {
 
                 <RepoActivitySection className="mt-6" />
 
-                <TodoList
-                    projectId="github-tracker"
-                    githubUsername={username}
-                />
-
                 {fullYearRepoStats && (
                     <RepoStats
                         stats={fullYearRepoStats}
@@ -451,6 +446,10 @@ export default function Home() {
                     />
                 )}
 
+                <TodoList
+                    projectId="github-tracker"
+                    githubUsername={username}
+                />
             </main>
 
             {inactivityData && (
