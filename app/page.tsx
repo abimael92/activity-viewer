@@ -279,13 +279,6 @@ export default function Home() {
                 });
             }
 
-            console.log('=== COMMIT DEBUG INFO ===');
-            console.log(`Total repos processed: ${repoStats.length}`);
-            console.log('Commits per repo:');
-            repoStats.forEach(repo => {
-                console.log(`- ${repo.name}: ${repo.totalCommits} commits`);
-            });
-
             const dataToCache: ChartData = { datasets, repoStats, labels, fullDates };
             setCachedData(cacheKey, dataToCache);
             setChartData(dataToCache);
@@ -352,7 +345,6 @@ export default function Home() {
                     (repo: InactiveRepo) => !IGNORED_REPOS.includes(repo.name)
                 ) || [],
             };
-            console.log('filteredData: ', filteredData);
 
             setInactivityData(filteredData);
         } catch (err) {
