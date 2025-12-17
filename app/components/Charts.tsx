@@ -76,10 +76,6 @@ export default function Charts({ chartData, username, daysFilter }: ChartsProps)
                 // Required so Chart.js detects click events
                 events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
 
-                onClick: (event, elements, chart) => {
-                    console.log("Chart.js onClick fired", event, elements);
-                },
-
                 hover: {
                     mode: 'index',
                     intersect: false,
