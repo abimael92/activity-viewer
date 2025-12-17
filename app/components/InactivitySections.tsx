@@ -10,9 +10,6 @@ interface InactivitySectionsProps {
 export default function InactivitySections({ data, username }: InactivitySectionsProps) {
     const { inactiveRepos, repos15Days } = data;
 
-    console.log('inactiveRepos: ', inactiveRepos);
-
-
     const getStatusClass = (reason: string) => {
         if (reason.includes('15 days')) return 'warning';
         if (reason.includes('21 days')) return 'inactive';
