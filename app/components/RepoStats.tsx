@@ -13,6 +13,9 @@ interface RepoStatsProps {
 const DeploymentStatusCard: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
     if (!deployment) return null;
 
+    console.log('deployed: ',deployment);
+    
+
     return (
         <div className="deployment-status-card">
             <div className="deployment-status-icon">
@@ -222,22 +225,25 @@ const DeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ deployme
 
     const platformNames: Record<string, string> = {
         'vercel': 'Vercel',
-        'netlify': 'Netlify',
-        'github-pages': 'GitHub Pages',
-        'heroku': 'Heroku',
-        'render': 'Render',
-        'railway': 'Railway',
-        'other': 'Deployed'
+        // 'netlify': 'Netlify',
+        // 'github-pages': 'GitHub Pages',
+        // 'heroku': 'Heroku',
+        // 'render': 'Render',
+        // 'railway': 'Railway',
+        // 'other': 'Deployed'
+        'not-deployed': 'Not Deployed' 
     };
 
     const badgeContent = (
         <span className="deployment-badge__content">
-            <span className="deployment-badge__tag">DEPLOYED</span> 
-            <span className="deployment-badge__platform">
-             {platformNames[deployment.deploymentType || 'other']} 
-            </span>
-            
-          
+            <span className="deployment-badge__tag">
+                {deployment.deployed ? 'DEPLOYED' : 'NOT DEPLOYED'} {/* Show both states */}
+            </span> 
+            {deployment.deployed && deployment.deploymentType && (
+                <span className="deployment-badge__platform">
+                    {platformNames[deployment.deploymentType]}
+                </span>
+            )}
         </span>
     );
 
@@ -456,24 +462,12 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
     // Get recent commits from the last day
     const getRecentCommits = (stat: RepoStat) => {
-        console.log('this is the stats: ', stat);
-
         if (!stat.lastDayCommits || !Array.isArray(stat.lastDayCommits)) return [];
 
-        // Return all commits, no date filtering
         return stat.lastDayCommits;
     };
 
     const sortedStats = [...stats].sort((a, b) => {
-        console.log(`Sorting by: ${sortBy}`, {
-            a: a.name,
-            b: b.name,
-            aDeployed: a.deployment?.deployed,
-            bDeployed: b.deployment?.deployed,
-            aLastDeploy: a.deployment?.lastDeployment,
-            bLastDeploy: b.deployment?.lastDeployment
-        });
-
         switch (sortBy) {
             case 'commits':
                 return b.totalCommits - a.totalCommits;
@@ -514,11 +508,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                     a.mergeStatus?.lastMergeSuccess === false ? 0 : -1;
                 const bMergeSuccess = b.mergeStatus?.lastMergeSuccess === true ? 1 :
                     b.mergeStatus?.lastMergeSuccess === false ? 0 : -1;
-                console.log('merge sort:', {
-                    a: a.name, aMergeSuccess,
-                    b: b.name, bMergeSuccess,
-                    result: bMergeSuccess - aMergeSuccess
-                });
 
                 if (bMergeSuccess !== aMergeSuccess) return bMergeSuccess - aMergeSuccess;
 
@@ -526,11 +515,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                 if (a.mergeStatus?.lastMergeDate && b.mergeStatus?.lastMergeDate) {
                     const aDate = new Date(a.mergeStatus.lastMergeDate).getTime();
                     const bDate = new Date(b.mergeStatus.lastMergeDate).getTime();
-                    console.log('lastMergeDate sort:', {
-                        a: a.name, aDate: a.mergeStatus.lastMergeDate,
-                        b: b.name, bDate: b.mergeStatus.lastMergeDate,
-                        result: bDate - aDate
-                    });
                     return bDate - aDate;
                 }
                 const mergeFallback = (b.mergeStatus?.lastMergeDate ? 1 : 0) - (a.mergeStatus?.lastMergeDate ? 1 : 0);
