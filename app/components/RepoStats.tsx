@@ -10,11 +10,51 @@ interface RepoStatsProps {
     username: string;
 }
 
-const DeploymentStatusCard: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
-    if (!deployment) return null;
+const generateVercelUrl = (repoName: string): string => {
+    console.log('Generating Vercel URL for repo:', repoName);
 
-    console.log('deployed: ',deployment);
+    // Special cases - ONLY for repos you KNOW are deployed on Vercel
+    const specialCases: Record<string, string> = {
+        'activity-viewer': 'https://activity-viewer-delta.vercel.app/',
+        'my-portfolio': 'https://my-portfolio-abimael92.vercel.app/',
+        'funny-rolls': 'https://funny-rolls.vercel.app/',
+        'driver-admin-portal': 'https://driver-admin-portal.vercel.app/',
+        'tasty-kitchen-recipes': 'https://tasty-kitchen-recipes.vercel.app/',
+        'event-planning': 'https://event-planning-brown.vercel.app/',
+        'yarding-app': 'https://yarding-app.vercel.app/',
+        'pokedex': 'https://pokedex-abimael92.vercel.app/',
+        // Add CarShowcase ONLY if it's actually deployed on Vercel
+        // 'car-showcase': 'https://car-showcase.vercel.app/',
+    };
+
+    // Check if we have a special case
+    if (specialCases[repoName]) {
+        console.log(`Found special case for ${repoName}: ${specialCases[repoName]}`);
+        return specialCases[repoName];
+    }
+
+    // If not in special cases, return empty string
+    console.log(`No Vercel deployment found for ${repoName} in special cases`);
+    return '';
+};
+
+const DeploymentStatusCard: React.FC<{
+    deployment?: DeploymentStatus;
+    repoName?: string; // Add this
+}> = ({ deployment, repoName }) => {
     
+    if (!deployment) {
+        console.log('DeploymentStatusCard: No deployment data provided for repo:', repoName);
+        return null;
+    }
+
+    console.log('DeploymentStatusCard received:', {
+        deployment,
+        deployed: deployment.deployed,
+        deploymentType: deployment.deploymentType,
+        deploymentUrl: deployment.deploymentUrl,
+        lastDeployment: deployment.lastDeployment
+    });
 
     return (
         <div className="deployment-status-card">
@@ -215,61 +255,48 @@ const RepoStatusPanel: React.FC<{ stats: RepoStat[] }> = ({ stats }) => {
 };
 
 
-const DeploymentBadge: React.FC<{ deployment?: DeploymentStatus }> = ({ deployment }) => {
-    // Only show if deployed
-    if (!deployment || !deployment.deployed) return null;
+const DeploymentBadge: React.FC<{ deployment?: DeploymentStatus; repoName?: string }> = ({ deployment, repoName }) => {
+    if (!deployment?.deployed) return null;
 
-    const platformClass = deployment.deploymentType
-        ? `deployment-badge deployment-badge--${deployment.deploymentType}`
-        : 'deployment-badge deployment-badge--other';
+    const deploymentUrl =
+        deployment.deploymentUrl ||
+        (repoName ? generateVercelUrl(repoName) : '');
+
+    if (!deploymentUrl) return null;
+
+    const deploymentType =
+        deployment.deploymentType === 'vercel' || deploymentUrl.includes('vercel.app')
+            ? 'vercel'
+            : deployment.deploymentType || 'other';
 
     const platformNames: Record<string, string> = {
-        'vercel': 'Vercel',
-        // 'netlify': 'Netlify',
-        // 'github-pages': 'GitHub Pages',
-        // 'heroku': 'Heroku',
-        // 'render': 'Render',
-        // 'railway': 'Railway',
-        // 'other': 'Deployed'
-        'not-deployed': 'Not Deployed' 
+        vercel: 'Vercel',
+        netlify: 'Netlify',
+        'github-pages': 'GitHub Pages',
+        heroku: 'Heroku',
+        render: 'Render',
+        railway: 'Railway',
+        other: 'Live App'
     };
 
-    const badgeContent = (
-        <span className="deployment-badge__content">
-            <span className="deployment-badge__tag">
-                {deployment.deployed ? 'DEPLOYED' : 'NOT DEPLOYED'} {/* Show both states */}
-            </span> 
-            {deployment.deployed && deployment.deploymentType && (
-                <span className="deployment-badge__platform">
-                    {platformNames[deployment.deploymentType]}
-                </span>
-            )}
-        </span>
-    );
-
-    if (deployment.deploymentUrl) {
-        return (
-            <a
-                href={deployment.deploymentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${platformClass} deployment-badge--link`}
-                title={`View live deployment on ${platformNames[deployment.deploymentType || 'other']}`}
-            >
-                {badgeContent}
-                {deployment.deploymentType === 'vercel' && (
-                    <span className="deployment-badge__icon">↗</span>
-                )}
-            </a>
-        );
-    }
-
     return (
-        <span className={platformClass} title={`Deployed on ${platformNames[deployment.deploymentType || 'other']}`}>
-            {badgeContent}
-        </span>
+        <a
+            href={deploymentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`deployment-badge deployment-badge--${deploymentType} deployment-badge--link`}
+            title={`Open app on ${platformNames[deploymentType]}`}
+        >
+            <span className="deployment-badge__tag">🚀 DEPLOYED</span>
+            <span className="deployment-badge__platform">
+                {deploymentType === 'vercel' && '▲ '}
+                {platformNames[deploymentType]}
+                <span className="deployment-badge__icon">↗</span>
+            </span>
+        </a>
     );
 };
+
 
 const MergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
     // Only show if there's a recent merge
@@ -324,17 +351,24 @@ const MergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus
     );
 };
 
-// Add a combined status component for the card header
+/* combine both badges into one component */
 const RepoStatusBadges: React.FC<{
     deployment?: DeploymentStatus;
     mergeStatus?: MergeStatus;
     isMobile: boolean;
-}> = ({ deployment, mergeStatus, isMobile }) => {
+    repoName?: string; // Add this
+}> = ({ deployment, mergeStatus, isMobile, repoName }) => {
+    console.log(`RepoStatusBadges for ${repoName}:`, {
+        deployment,
+        mergeStatus,
+        repoName
+    });
+
     if (!deployment && !mergeStatus) return null;
 
     return (
         <div className={`repo-status-badges ${isMobile ? 'repo-status-badges--mobile' : ''}`}>
-            {deployment && <DeploymentBadge deployment={deployment} />}
+            {deployment && <DeploymentBadge deployment={deployment} repoName={repoName} />}
             {mergeStatus && <MergeStatusBadge mergeStatus={mergeStatus} />}
         </div>
     );
@@ -348,6 +382,25 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const [visibleCount, setVisibleCount] = useState<number>(6);
     const [isMobile, setIsMobile] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+    
+    console.log('=== ALL STATS DEBUG ===');
+    console.log('Total stats:', stats.length);
+    console.log('Sample stat structure:', stats[0] ? {
+        name: stats[0].name,
+        deployment: stats[0].deployment,
+        hasDeployment: !!stats[0].deployment,
+        deploymentType: stats[0].deployment?.deploymentType,
+        deployed: stats[0].deployment?.deployed,
+        deploymentUrl: stats[0].deployment?.deploymentUrl
+    } : 'No stats available');
+
+    console.log('All repo names:', stats.map(s => s.name));
+    console.log('Repos with deployment data:', stats.filter(s => s.deployment).map(s => ({
+        name: s.name,
+        deployment: s.deployment
+    })));
+    console.log('====================');
+
 
     // Detect mobile screen size
     useEffect(() => {
@@ -413,11 +466,17 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     };
 
     const getRepoInitials = (repoName: string) => {
-        const words = repoName
+        // Add null/undefined check
+        // if (!repoName) return '??';
+        
+        const str = String(repoName); // Convert to string
+
+        const words = str
             .replace(/([A-Z])/g, ' $1')
             .replace(/[-_]/g, ' ')
             .split(' ')
             .filter(Boolean);
+            
         return words.length >= 2
             ? (words[0][0] + words[1][0]).toUpperCase()
             : repoName.substring(0, 2).toUpperCase();
@@ -468,9 +527,12 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     };
 
     const sortedStats = [...stats].sort((a, b) => {
+    
+        if (!a || !b) return 0;
+        
         switch (sortBy) {
             case 'commits':
-                return b.totalCommits - a.totalCommits;
+                return (b.totalCommits || 0) - (a.totalCommits || 0);
             case 'recent':
                 return new Date(b.lastCommitDate || b.createdAt).getTime() -
                     new Date(a.lastCommitDate || a.createdAt).getTime();
@@ -480,11 +542,6 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                 // Sort by deployment status: deployed first, then not deployed
                 const aDeployed = a.deployment?.deployed ? 1 : 0;
                 const bDeployed = b.deployment?.deployed ? 1 : 0;
-                console.log('deployed sort:', {
-                    a: a.name, aDeployed,
-                    b: b.name, bDeployed,
-                    result: bDeployed - aDeployed
-                });
 
                 if (bDeployed !== aDeployed) return bDeployed - aDeployed;
 
@@ -521,7 +578,10 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                 console.log('merge fallback sort:', { a: a.name, b: b.name, result: mergeFallback });
                 return mergeFallback;
             default:
-                return a.name.localeCompare(b.name);
+                // Handle undefined names
+                const nameA = a.name || '';
+                const nameB = b.name || '';
+                return nameA.localeCompare(nameB);
         }
     });
 
@@ -725,6 +785,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                                 deployment={stat.deployment}
                                                                 mergeStatus={stat.mergeStatus}
                                                                 isMobile={isMobile}
+                                                                repoName={stat.name} 
                                                             />
                                                         </div>
                                                     </div>
@@ -921,7 +982,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                                 {/* ENHANCED: Use new Deployment Status Card */}
                                                 {stat.deployment && (
-                                                    <DeploymentStatusCard deployment={stat.deployment} />
+                                                    <DeploymentStatusCard deployment={stat.deployment} repoName={stat.name} />
                                                 )}
 
                                                 {/* ENHANCED: Use new Merge Status Card */}
@@ -1072,6 +1133,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                             deployment={stat.deployment}
                                                             mergeStatus={stat.mergeStatus}
                                                             isMobile={isMobile}
+                                                            repoName={stat.name}
                                                         />
                                                     </div>
                                                 </div>
