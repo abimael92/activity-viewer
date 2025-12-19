@@ -344,9 +344,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 <h3>
                     Daily Repository Activity
                     <Tooltip content="Compare yesterday's vs today's commit activity across all repositories">
-                        <span className="tooltip-icon" >
-                            ℹ️
-                        </span>
+                        <span className="tooltip-icon">ℹ️</span>
                     </Tooltip>
                 </h3>
 
@@ -373,15 +371,21 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             <div className="activity-grid">
                 {/* Header Row */}
                 <div className="activity-header">
-                    <div className="repo-column" title="Repository name">
-                        Repository
-                    </div>
-                    <div className="commit-column" title="Number of commits made yesterday">
-                        Yesterday
-                    </div>
-                    <div className="commit-column" title="Number of commits made today">
-                        Today
-                    </div>
+                    <Tooltip content="Repository name">
+                        <div className="repo-column">
+                            Repository
+                        </div>
+                    </Tooltip>
+                    <Tooltip content="Number of commits made yesterday">
+                        <div className="commit-column">
+                            Yesterday
+                        </div>
+                    </Tooltip>
+                    <Tooltip content="Number of commits made today">
+                        <div className="commit-column">
+                            Today
+                        </div>
+                    </Tooltip>
 
                     {extraDates.map(d => (
                         <div key={d} className="commit-column date-header" title={`Commits on ${d}`}>
