@@ -99,3 +99,77 @@ export interface ChartData {
 	labels: string[];
 	fullDates: string[];
 }
+
+export interface GitHubEvent {
+	id: string;
+	type: string;
+	actor: {
+		id: number;
+		login: string;
+		display_login?: string;
+		gravatar_id: string;
+		url: string;
+		avatar_url: string;
+	};
+	repo: {
+		id: number;
+		name: string;
+		url: string;
+	};
+	payload: {
+		action?: string;
+		ref?: string;
+		ref_type?: string;
+		master_branch?: string;
+		description?: string;
+		pusher_type?: string;
+		push_id?: number;
+		size?: number;
+		distinct_size?: number;
+		head?: string;
+		before?: string;
+		commits?: Array<{
+			sha: string;
+			author: {
+				email: string;
+				name: string;
+			};
+			message: string;
+			distinct: boolean;
+			url: string;
+		}>;
+		issue?: {
+			number: number;
+			title: string;
+			user: {
+				login: string;
+				id: number;
+			};
+		};
+		pull_request?: {
+			number: number;
+			title: string;
+			user: {
+				login: string;
+				id: number;
+			};
+		};
+		comment?: {
+			id: number;
+			user: {
+				login: string;
+				id: number;
+			};
+			body: string;
+		};
+	};
+	public: boolean;
+	created_at: string;
+	org?: {
+		id: number;
+		login: string;
+		gravatar_id: string;
+		url: string;
+		avatar_url: string;
+	};
+}
