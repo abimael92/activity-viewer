@@ -79,14 +79,19 @@ const processRepoCommits = async (
 
             if (!commitsRes.ok) break;
 
-            const commits = await commitsRes.json();
-
-            if (commits.length === 0) break;
+            let commits;
+            try {
+                commits = await commitsRes.json();
+                if (commits.length === 0) break;
+            } catch (error) {
+                console.error(`Failed to parse JSON for ${repo.name}:`, error);
+                break;
+            }
 
             allCommits = allCommits.concat(commits);
 
-            if (page === 1) { // Only get from first page for recent commits
-                commits.slice(0, 10).forEach((commit: GitHubCommit) => {
+            if (page === 1) {
+                commits.slice(0, 15).forEach((commit: GitHubCommit) => {
                     lastDayCommits.push({
                         hash: commit.sha,
                         message: commit.commit?.message || 'No message',
@@ -311,11 +316,11 @@ export default function Home() {
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            const repoRes = await fetchWithAuth(`https://api.github.com/users/${username}/repos?per_page=15`);
+            const repoRes = await fetchWithAuth(`https://api.github.com/users/${username}/repos?per_page=30`);
             const repos = await repoRes.json();
             const filteredRepos = repos.filter((repo: GitHubRepo) => !IGNORED_REPOS.includes(repo.name));
 
-            const topRepos = filteredRepos.slice(0, 10);
+            const topRepos = filteredRepos.slice(0, 20);
             const statsPromises = topRepos.map((repo: GitHubRepo, i: number) =>
                 processRepoCommits(username, repo, start, end, dateMap, labels, i)
             );
@@ -324,8 +329,11 @@ export default function Home() {
             const fullYearStats = results
                 .filter((result): result is ProcessedRepo => result !== null && result.stats.totalCommits > 0)
                 .map(result => result.stats);
+                
+                console.log('Filtered stats:', fullYearStats.map(s => s.name));
 
             setFullYearRepoStats(fullYearStats);
+            // setFullYearRepoStats(results); // RESULTS HERE 
         } catch (error) {
             console.error('Error loading full year stats:', error);
         } finally {
@@ -430,13 +438,11 @@ export default function Home() {
 
                 <RepoActivitySection className="mt-6" />
 
-                {fullYearRepoStats && (
                     <RepoStats
                         stats={fullYearRepoStats}
                         username={username}
                         loading={fullYearLoading}
                     />
-                )}
 
                 <TodoList
                     projectId="github-tracker"
