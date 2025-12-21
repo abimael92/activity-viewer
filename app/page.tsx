@@ -5,14 +5,12 @@ import Charts from './components/Charts';
 import InactivitySections from './components/InactivitySections';
 import RepoStats from './components/RepoStats';
 import { RepoActivitySection } from './components/RepoActivitySection';
-
+import NotificationBell from './components/NotificationBell';
 import { getRepoStatus } from '@/lib/repoStatus';
 import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from '@/lib/github';
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 import TodoList from './components/TodoList';
-// Replace the COLORS array in your main page with:
 import { COLORS } from '@/lib/colors';
-// Remove the local COLORS array
 
 interface GitHubCommit {
     sha: string;
@@ -181,6 +179,23 @@ export default function Home() {
     const [error, setError] = useState<string | null>(null);
     const [fullYearRepoStats, setFullYearRepoStats] = useState<RepoStat[]>([]);
     const [showTotal, setShowTotal] = useState(true);
+    const [notificationSettings, setNotificationSettings] = useState({
+        sound: true,
+        toast: true,
+        autoOpen: true,
+        maxAge: 30 // days
+    });
+    
+    useEffect(() => {
+        const saved = localStorage.getItem('notificationSettings');
+        if (saved) {
+            setNotificationSettings(JSON.parse(saved));
+        }
+    }, []);
+    
+    useEffect(() => {
+        localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+    }, [notificationSettings]);
 
     // const loadData = async () => {
     //     if (!username.trim()) return setError('Please enter a GitHub username');
@@ -572,6 +587,21 @@ export default function Home() {
 
     return (
         <div id="app">
+           { /* Add NotificationBell here */}
+                        {inactivityData && notificationSettings.toast && (
+                            <NotificationBell
+                                inactivityData={inactivityData}
+                                username={username}
+                                onNotificationClick={(repoName: string, type: 'stale' | 'idle' | 'inactive') => {
+                                    console.log(`Notification clicked: ${repoName} (${type})`);
+                                    // Optionally scroll to the section
+                                    const element = document.getElementById('inactivitySections');
+                                    if (element) {
+                                        element.scrollIntoView({ behavior: 'smooth' });
+                                    }
+                                }}
+                            />
+                        )}
             <header className="app-header">
                 <h1 className="app-title">Activity Viewer</h1>
                 <div className="input-container">
