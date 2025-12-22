@@ -57,11 +57,10 @@ export default function NotificationBell({
         const now = new Date();
         const currentNotifications = prevNotificationsRef.current;
 
-        // Check for inactive repos
+        // Check for INACTIVE repos (30+ days)
         inactivityData.inactiveRepos.forEach(repo => {
             const notificationId = `inactive-${repo.name}`;
 
-            // Check if we already notified about this repo in the last 24 hours
             const existing = currentNotifications.find(n =>
                 n.repoName === repo.name &&
                 n.type === 'inactive' &&
@@ -83,7 +82,7 @@ export default function NotificationBell({
             }
         });
 
-        // Check for warning repos
+        // Check for MODERATELY INACTIVE repos (15-29 days) - THIS IS YOUR repos15Days
         inactivityData.repos15Days.forEach(repo => {
             const notificationId = `warning-${repo.name}`;
 
@@ -97,8 +96,8 @@ export default function NotificationBell({
                 newNotifications.push({
                     id: notificationId,
                     type: 'warning',
-                    title: 'Repository Warning',
-                    message: `${repo.name} approaching inactivity (${repo.daysWithoutCommits} days)`,
+                    title: 'Moderately Inactive Repository',
+                    message: `${repo.name} has no commits for ${repo.daysWithoutCommits} days (15+ days)`,
                     repoName: repo.name,
                     days: typeof repo.daysWithoutCommits === 'number' ? repo.daysWithoutCommits : parseInt(repo.daysWithoutCommits, 10),
                     read: false,
