@@ -47,7 +47,6 @@ interface CommitData {
     author?: string;
 }
 
-
 const IGNORED_REPOS = [
     "ecommerce-fe", "college_project", "my_portfolio2", "ecommerce_be", "postList",
     "my-portfolio", "cine-kachorro", "interview-codingchallenge-fsjs",
