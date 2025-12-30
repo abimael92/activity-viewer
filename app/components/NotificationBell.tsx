@@ -139,6 +139,20 @@ export default function NotificationBell({
             return () => clearTimeout(timer);
         }
     }, [showToast]);
+    
+    // Add this useEffect
+    useEffect(() => {
+        // Add/remove body class for scroll locking
+        if (isOpen && window.innerWidth <= 768) {
+            document.body.classList.add('notification-open');
+        } else {
+            document.body.classList.remove('notification-open');
+        }
+
+        return () => {
+            document.body.classList.remove('notification-open');
+        };
+    }, [isOpen]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
