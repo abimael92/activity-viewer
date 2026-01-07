@@ -243,8 +243,11 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
         return () => unsubscribe();
     }, [projectId]);
 
-
-
+    useEffect(() => {
+        if (todos.length > 0) {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+    }, [todos]);
 
 
     return (

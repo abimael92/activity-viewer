@@ -29,19 +29,39 @@ export default function NotificationBell({
 }: NotificationBellProps) {
     const [notifications, setNotifications] = useState<Notification[]>(() => {
         const saved = localStorage.getItem(`notifications_${username}`);
+        let savedNotifications: Notification[] = [];
+        
         if (saved) {
             try {
                 const parsed = JSON.parse(saved) as Array<Omit<Notification, 'timestamp'> & { timestamp: string | number }>;
-                return parsed.map((n) => ({
+                savedNotifications = parsed.map((n) => ({
                     ...n,
                     timestamp: new Date(n.timestamp)
                 }));
             } catch (e) {
                 console.error('Failed to load notifications:', e);
-                return [];
             }
         }
-        return [];
+
+        // Load todo notifications
+        const todos = JSON.parse(localStorage.getItem('todos') || '[]');
+        const todoNotifications = todos
+            .filter((t: { status: string }) => t.status === 'pending')
+            .map((t: { id: string; title: string; repoName?: string }) => ({
+                id: `todo-${t.id}`,
+                type: 'info' as const,
+                title: 'Pending Todo',
+                message: t.title,
+                repoName: t.repoName || 'General',
+                days: 0,
+                read: false,
+                timestamp: new Date(),
+            }));
+
+        return [
+            ...todoNotifications,
+            ...savedNotifications.filter(n => !n.id.startsWith('todo-')),
+        ];
     });
     const prevNotificationsRef = useRef<Notification[]>(notifications);
     const [isOpen, setIsOpen] = useState(false);
@@ -139,7 +159,7 @@ export default function NotificationBell({
             return () => clearTimeout(timer);
         }
     }, [showToast]);
-    
+
     // Add this useEffect
     useEffect(() => {
         // Add/remove body class for scroll locking
@@ -221,6 +241,7 @@ export default function NotificationBell({
         switch (type) {
             case 'inactive': return '🔴';
             case 'warning': return '🟡';
+            case 'info': return '📝';
             default: return '🔵';
         }
     };
