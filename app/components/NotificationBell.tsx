@@ -318,9 +318,9 @@ export default function NotificationBell({
                                     <p>You&apos;re all caught up!</p>
                                 </div>
                             ) : (
-                                notifications.map(notification => (
+                                notifications.map((notification, index) => (
                                     <div
-                                        key={notification.id}
+                                        key={`${notification.id}-${index}-${notification.timestamp.getTime()}`}
                                         className={`notification-item notification-type-${notification.type} ${notification.read ? '' : 'unread'}`}
                                         onClick={() => handleNotificationClick(notification)}
                                     >
