@@ -4796,3 +4796,692 @@ body.notification-open {
         }
     }
 }
+
+/* ===== RESPONSIVE FIXES ===== */
+
+/* Base responsive container */
+.repo-stats-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .repo-stats-container {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .repo-stats-container {
+    max-width: 1200px;
+    padding: 1.5rem;
+  }
+}
+
+/* Grid Responsive Fixes */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Mobile-specific grid */
+.stats-grid.mobile-grid .stat-card {
+  padding: 0.75rem;
+  margin: 0.25rem;
+  min-height: auto;
+}
+
+/* Card responsive adjustments */
+.stat-card {
+  width: 100%;
+  min-height: 280px;
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 639px) {
+  .stat-card {
+    min-height: 240px;
+    padding: 0.75rem;
+  }
+  
+  .stat-card.expanded {
+    min-height: 400px;
+  }
+}
+
+/* Card header responsive */
+.card-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 639px) {
+  .card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .repo-main-info {
+    width: 100%;
+  }
+  
+  .expand-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+}
+
+/* Repo info responsive */
+.repo-main-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .repo-main-info {
+    gap: 0.5rem;
+  }
+  
+  .repo-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Repo title responsive */
+.repo-title {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .repo-name {
+    font-size: 0.9rem !important;
+    line-height: 1.2;
+  }
+  
+  .repo-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .repo-dates {
+    font-size: 0.7rem;
+  }
+  
+  .repo-language {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Badges responsive */
+.repo-status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .repo-status-badges {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .deployment-badge,
+  .merge-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    white-space: nowrap;
+  }
+}
+
+/* Card stats responsive */
+.card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+@media (max-width: 639px) {
+  .card-stats {
+    gap: 0.25rem;
+  }
+  
+  .stat-pill {
+    padding: 0.4rem 0.25rem !important;
+    min-height: 50px;
+  }
+  
+  .stat-value {
+    font-size: 0.9rem;
+  }
+  
+  .stat-label {
+    font-size: 0.6rem;
+  }
+}
+
+/* Expanded details responsive */
+.card-details {
+  width: 100%;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .card-details {
+    padding-top: 0.25rem;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+  
+  .detail-label,
+  .detail-value {
+    font-size: 0.8rem;
+    width: 100%;
+  }
+}
+
+/* Recent activity responsive */
+.recent-activity-section {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .recent-activity-section {
+    margin-top: 0.25rem;
+  }
+  
+  .commit-item {
+    padding: 0.5rem !important;
+  }
+  
+  .commit-text {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+  
+  .commit-meta {
+    font-size: 0.7rem;
+  }
+}
+
+/* Activity meter responsive */
+.activity-meter {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .meter-bar {
+    height: 20px;
+  }
+  
+  .meter-text {
+    font-size: 0.6rem;
+  }
+}
+
+/* Card footer responsive */
+.card-footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 639px) {
+  .card-footer {
+    padding-top: 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  
+  .view-repo-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .commit-trend {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* List view responsive */
+.stats-list {
+  width: 100%;
+}
+
+.stat-list-item {
+  width: 100%;
+  position: relative;
+}
+
+@media (max-width: 639px) {
+  .stat-list-item {
+    padding: 0.75rem;
+  }
+  
+  .list-item-main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .list-repo-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .list-stats {
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+  }
+  
+  .list-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .list-item-details {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+}
+
+/* Controls responsive */
+.stats-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .stats-controls {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media (max-width: 639px) {
+  .view-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .view-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .sort-controls {
+    width: 100%;
+  }
+  
+  .sort-select {
+    width: 100%;
+  }
+}
+
+/* Show more/less controls */
+.show-more-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem 0;
+}
+
+@media (min-width: 640px) {
+  .show-more-controls {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
+  }
+}
+
+.show-more-btn,
+.show-less-btn {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 640px) {
+  .show-more-btn,
+  .show-less-btn {
+    width: auto;
+    min-width: 150px;
+  }
+}
+
+/* Export controls responsive */
+.export-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .export-controls {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+.export-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .export-btn {
+    width: auto;
+    min-width: 140px;
+  }
+}
+
+/* Tooltip responsive */
+@media (max-width: 639px) {
+  .tooltip {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90% !important;
+    max-width: 300px !important;
+    z-index: 9999 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  
+  .tooltip.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Section header responsive */
+.section-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .section-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .stats-summary {
+    grid-template-columns: repeat(4, 1fr);
+    width: auto;
+  }
+}
+
+/* Status panel responsive */
+.repo-status-panel {
+  padding: 1rem;
+}
+
+@media (max-width: 639px) {
+  .repo-status-panel {
+    padding: 0.75rem;
+  }
+  
+  .status-panel-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .status-panel-stats {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .status-stat-item {
+    min-width: auto;
+    padding: 0.5rem;
+  }
+  
+  .status-stat-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* Deployment actions toolbar responsive */
+.deployment-actions-toolbar {
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .deployment-actions-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.actions-left,
+.actions-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .actions-left,
+  .actions-right {
+    flex-direction: row;
+    width: auto;
+  }
+}
+
+.deployment-action-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .deployment-action-btn {
+    width: auto;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (max-width: 639px) {
+  button,
+  .view-btn,
+  .sort-select,
+  .export-btn,
+  .show-more-btn,
+  .show-less-btn,
+  .view-repo-btn,
+  .expand-btn,
+  .action-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .stat-pill,
+  .deployment-badge,
+  .merge-badge {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Text truncation for mobile */
+@media (max-width: 639px) {
+  .repo-name,
+  .commit-text,
+  .detail-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  
+  .repo-name {
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* Loading state responsive */
+.loading {
+  padding: 2rem 1rem;
+}
+
+@media (max-width: 639px) {
+  .loading {
+    padding: 1rem;
+  }
+  
+  .loading-spinner {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .loading p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Fix for DeploymentStatusCard on mobile */
+@media (max-width: 639px) {
+  .deployment-status-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .deployment-status-content {
+    width: 100%;
+  }
+  
+  .deployment-status-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .deployment-status-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .deployment-status-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Fix for MergeStatusCard on mobile */
+@media (max-width: 639px) {
+  .merge-status-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .merge-status-content {
+    width: 100%;
+  }
+  
+  .merge-status-timeline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .merge-status-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Prevent horizontal scrolling */
+body {
+  overflow-x: hidden;
+}
+
+.repo-stats-container,
+.repo-stats {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
