@@ -328,7 +328,7 @@ const MergeStatusBadge: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus
                         : 'Last merge failed'
                 }
             >
-                <span className="merge-badge__icon">{mergeStatus.lastMergeDate ? '✓' : '✗'}</span>
+                <span className="merge-badge__icon">{mergeStatus.lastMergeSuccess ? '✓' : '✗'}</span>
                 <span className="merge-badge__text">Merge</span>
             </span>
 

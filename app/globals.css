@@ -348,7 +348,8 @@ body {
 
 .repo-stats {
     margin-top: 1rem;
-    padding: 1rem;
+   margin: 2rem auto;
+    padding: 1.5rem;
     background: rgba(5, 5, 5, 0.5);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
