@@ -333,14 +333,13 @@ body {
 
 /* Enhanced Repository Stats */
 .repo-stats-container {
-    margin-top: 2rem;
-    padding: 1rem;
+    margin: 0 auto;
+    padding: 1.5rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
+    width: calc(100% - 2rem);
     backdrop-filter: blur(10px);
     width: 100%;
     box-sizing: border-box;
@@ -348,18 +347,12 @@ body {
 
 .repo-stats {
     margin-top: 1rem;
-   margin: 2rem auto;
     padding: 1.5rem;
     background: rgba(5, 5, 5, 0.5);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
     backdrop-filter: blur(10px);
-    width: 100%;
     box-sizing: border-box;
-  
 }
 
 .section-header {
@@ -5481,8 +5474,11 @@ body {
   overflow-x: hidden;
 }
 
-.repo-stats-container,
-.repo-stats {
-  max-width: 100vw;
-  overflow-x: hidden;
+
+.chart-container,
+.todo-container,
+.repo-stats-container {
+    margin: 2rem auto; /* Consistent vertical margins, auto for centering */
+    max-width: 1000px;
+    overflow-x: hidden;
 }
