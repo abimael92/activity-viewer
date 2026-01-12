@@ -476,7 +476,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
             .replace(/[-_]/g, ' ')
             .split(' ')
             .filter(Boolean);
-            
+
         return words.length >= 2
             ? (words[0][0] + words[1][0]).toUpperCase()
             : repoName.substring(0, 2).toUpperCase();
@@ -485,10 +485,40 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
     const getRepositoryAge = (createdAt: string) => {
         if (!now) return '...';
         const created = new Date(createdAt);
-        const diffDays = Math.ceil((now - created.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays < 30) return `${diffDays}d`;
-        if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo`;
-        return `${Math.floor(diffDays / 365)}y`;
+        const nowDate = new Date(now);
+
+        // Calculate total difference in milliseconds
+        const diffMs = nowDate.getTime() - created.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 1) {
+            return 'Less than a day old';
+        }
+
+        if (diffDays < 30) {
+            return `${diffDays} day${diffDays !== 1 ? 's' : ''} old`;
+        }
+
+        if (diffDays < 365) {
+            const months = Math.floor(diffDays / 30);
+            const remainingDays = diffDays % 30;
+
+            if (remainingDays === 0) {
+                return `${months} month${months !== 1 ? 's' : ''} old`;
+            }
+            return `${months} month${months !== 1 ? 's' : ''}, and ${remainingDays} day${remainingDays !== 1 ? 's' : ''} old`;
+        }
+
+        // For years
+        const years = Math.floor(diffDays / 365);
+        const remainingDaysAfterYears = diffDays % 365;
+        const months = Math.floor(remainingDaysAfterYears / 30);
+
+        if (months === 0) {
+            return `${years} year${years !== 1 ? 's' : ''} old`;
+        }
+
+        return `${years} year${years !== 1 ? 's' : ''}, and ${months} month${months !== 1 ? 's' : ''} old`;
     };
 
     const getActivityLevel = (totalCommits: number, streak: number) => {
@@ -763,7 +793,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                         <div className="repo-meta">
                                                             <div className="repo-dates">
                                                                 <span>{formatDate(stat.createdAt)}</span>
-                                                                <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                                <span>{getRepositoryAge(stat.createdAt)}</span>
                                                             </div>
                                                             {stat.language && (
                                                                 <span
@@ -1114,7 +1144,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                                         <div className="list-repo-meta">
                                                             <span>{formatDate(stat.createdAt)}</span>
-                                                            <span>{getRepositoryAge(stat.createdAt)} old</span>
+                                                            <span>{getRepositoryAge(stat.createdAt)}</span>
                                                             {stat.language && !isMobile && (
                                                                 <span
                                                                     className="repo-language"
