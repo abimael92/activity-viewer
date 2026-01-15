@@ -52,7 +52,22 @@ export async function fetchWithAuth(url: string): Promise<Response> {
 		}
 
 		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
+			switch (response.status) {
+				case 401:
+					throw new Error('Unauthorized: missing or invalid GitHub token');
+				case 403:
+					throw new Error(
+						'Forbidden: token has no access or rate limit exceeded'
+					);
+				case 404:
+					throw new Error(
+						'Not found: GitHub endpoint or resource does not exist'
+					);
+				case 422:
+					throw new Error('Unprocessable entity: invalid request parameters');
+				default:
+					throw new Error(`GitHub API error: ${response.status}`);
+			}
 		}
 
 		return response;
