@@ -11,6 +11,7 @@ import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from 
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 import TodoList from './components/TodoList';
 import { COLORS } from '@/lib/colors';
+import Snackbar, { showSnackbar } from './components/Snackbar';
 
 interface GitHubCommit {
     sha: string;
@@ -184,216 +185,24 @@ export default function Home() {
         autoOpen: true,
         maxAge: 30 // days
     });
-    
+
     useEffect(() => {
         const saved = localStorage.getItem('notificationSettings');
         if (saved) {
             setNotificationSettings(JSON.parse(saved));
         }
     }, []);
-    
+
     useEffect(() => {
         localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
     }, [notificationSettings]);
 
-    // const loadData = async () => {
-    //     if (!username.trim()) return setError('Please enter a GitHub username');
-    //     setLoading(true);
-    //     setError(null);
-
-    //     try {
-    //         const cacheKey = `chart_${username}_${daysFilter}d`;
-    //         const cachedData = getCachedData<ChartData>(cacheKey);
-    //         if (cachedData) {
-    //             setChartData(cachedData);
-    //             setLoading(false);
-    //             return;
-    //         }
-
-    //         const userRes = await fetchWithAuth(`https://api.github.com/users/${username}`);
-    //         if (!userRes.ok) throw new Error(`User "${username}" not found on GitHub`);
-
-    //         const repoRes = await fetchWithAuth(
-    //             `https://api.github.com/users/${username}/repos?sort=updated`
-    //         );
-    //         if (!repoRes.ok) throw new Error(`Failed to fetch repositories`);
-
-    //         const repos: GitHubRepo[] = await repoRes.json();
-    //         if (repos.length === 0) throw new Error(`User "${username}" has no public repos.`);
-
-    //         const end = new Date();
-    //         const start = new Date();
-    //         start.setDate(end.getDate() - parseInt(daysFilter));
-    //         // Reset times to start/end of day in UTC
-    //         start.setUTCHours(0, 0, 0, 0);
-    //         end.setUTCHours(23, 59, 59, 999);
-
-    //         const labels: string[] = [];
-    //         const fullDates: string[] = [];
-    //         const dateMap: Record<string, number> = {};
-    //         const currentDate = new Date(start);
-
-    //         while (currentDate <= end) {
-    //             const dateStr = currentDate.toISOString().split('T')[0];
-
-    //             labels.push(
-    //                 currentDate.toLocaleDateString('en-US', {
-    //                     month: 'short',
-    //                     day: 'numeric',
-    //                     weekday: 'short',
-    //                     timeZone: 'UTC'  // Add this to ensure consistent dates
-    //                 })
-    //             );
-
-    //             fullDates.push(dateStr);
-    //             dateMap[dateStr] = labels.length - 1;
-    //             currentDate.setDate(currentDate.getDate() + 1);
-    //         }
-
-    //         const colors = [
-    //             '#646cff', '#00d4aa', '#ff6b6b', '#ffa726', '#ab47bc',
-    //             '#26c6da', '#d4e157', '#8d6e63', '#78909c', '#ec407a'
-    //         ];
-
-    //         const datasets: ChartDataset[] = [];
-    //         const repoStats: RepoStat[] = [];
-
-    //         for (let i = 0; i < repos.length; i++) {
-    //             const repo = repos[i];
-    //             let allCommits: GitHubCommit[] = [];
-    //             let page = 1;
-    //             let hasMoreCommits = true;
-
-    //             // Paginate through all commits
-    //             while (hasMoreCommits) {
-    //                 const commitsRes = await fetchWithAuth(
-    //                     `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100&page=${page}`
-    //                 );
-
-    //                 if (!commitsRes.ok) break;
-
-    //                 const commits: GitHubCommit[] = await commitsRes.json();
-
-    //                 if (commits.length === 0) {
-    //                     hasMoreCommits = false;
-    //                 } else {
-    //                     allCommits = allCommits.concat(commits);
-    //                     page++;
-
-    //                     // Safety check to avoid infinite loops
-    //                     if (page > 10) break; // Max 1000 commits per repo
-    //                 }
-    //             }
-
-    //             const repoDailyCount = new Array(labels.length).fill(0);
-
-    //             let totalCommits = 0;
-    //             let maxCommits = 0;
-    //             let maxCommitsDate: string | null = null;
-    //             let lastCommitDate: string | null = null;
-
-    //             allCommits.forEach((c) => {
-    //                 const commitDateStr = c.commit?.author?.date;
-    //                 if (!commitDateStr) return;
-
-    //                 const commitDate = new Date(commitDateStr);
-    //                 const dateStr = commitDate.toISOString().split('T')[0];
-    //                 const index = dateMap[dateStr];
-
-    //                 if (index !== undefined) {
-    //                     repoDailyCount[index]++;
-    //                     totalCommits++;
-
-    //                     if (repoDailyCount[index] > maxCommits) {
-    //                         maxCommits = repoDailyCount[index];
-    //                         maxCommitsDate = dateStr;
-    //                     }
-
-    //                     if (!lastCommitDate || commitDateStr > lastCommitDate) {
-    //                         lastCommitDate = commitDateStr;
-    //                     }
-    //                 }
-    //             });
-
-    //             let streak = 0, maxStreak = 0;
-
-    //             for (const count of repoDailyCount) {
-
-    //                 if (count > 0) {
-    //                     streak++;
-    //                     maxStreak = Math.max(maxStreak, streak);
-    //                 } else streak = 0;
-    //             }
-
-    //             if (totalCommits > 0) {
-    //                 repoStats.push({
-    //                     name: repo.name,
-    //                     totalCommits,
-    //                     maxCommits,
-    //                     maxCommitsDate,
-    //                     maxConsecutiveDays: maxStreak,
-    //                     lastCommitDate,
-    //                     description: repo.description,
-    //                     createdAt: repo.created_at,
-    //                     color: colors[i % colors.length],
-    //                     language: repo.language,
-    //                     stars: repo.stargazers_count,
-    //                     forks: repo.forks_count,
-    //                 });
-
-    //                 datasets.push({
-    //                     label: repo.name,
-    //                     data: repoDailyCount,
-    //                     backgroundColor: colors[i % colors.length] + '20',
-    //                     borderColor: colors[i % colors.length],
-    //                     borderWidth: 2,
-    //                     pointBackgroundColor: colors[i % colors.length],
-    //                     pointBorderColor: '#ffffff',
-    //                     pointBorderWidth: 1,
-    //                     pointRadius: 3,
-    //                     pointHoverRadius: 5,
-    //                     fill: true,
-    //                     tension: 0.3,
-    //                 });
-    //             }
-    //         }
-
-    //         // Add this right before setCachedData:
-    //         console.log('=== COMMIT DEBUG INFO ===');
-    //         console.log(`Total repos processed: ${repoStats.length}`);
-    //         console.log(`Total commits across all repos: ${repoStats.reduce((sum, repo) => sum + repo.totalCommits, 0)}`);
-    //         console.log('Commits per repo:');
-    //         repoStats.forEach(repo => {
-    //             console.log(`- ${repo.name}: ${repo.totalCommits} commits`);
-    //         });
-
-    //         // Add this after processing all repos
-    //         console.log('=== COMMITS PER DAY ===');
-    //         labels.forEach((label, index) => {
-    //             const dayTotal = datasets.reduce((sum, dataset) => sum + dataset.data[index], 0);
-    //             console.log(`${fullDates[index]} (${label}): ${dayTotal} commits`);
-    //         });
-
-    //         const dataToCache: ChartData = { datasets, repoStats, labels, fullDates };
-
-    //         setCachedData(cacheKey, dataToCache);
-    //         setChartData(dataToCache);
-
-    //     } catch (err) {
-    //         setError(err instanceof Error ? err.message : 'An unknown error occurred');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-    // Add this state for toggling total contributions
-
-    // Update the loadData function to handle the toggle
-
-    // Memoized load function
+    // Memoized load function - Use global showSnackbar
     const loadData = useCallback(async () => {
-        if (!username.trim()) return setError('Please enter a GitHub username');
-
+        if (!username.trim()) {
+            showSnackbar('Please enter a GitHub username', 'error');
+            return;
+        }
         setLoading(true);
         setError(null);
 
@@ -404,6 +213,7 @@ export default function Home() {
             if (cachedData) {
                 setChartData(cachedData);
                 setLoading(false);
+                showSnackbar('Loaded from cache!', 'success');
                 return;
             }
 
@@ -493,18 +303,33 @@ export default function Home() {
                 });
             }
 
+            // Create chart data object
+            const dataToCache: ChartData = {
+                datasets,
+                repoStats,
+                labels,
+                fullDates
+            };
+
+            setCachedData(cacheKey, dataToCache);
+            setChartData(dataToCache);
+            showSnackbar(`Loaded ${validResults.length} repositories!`, 'success');
+
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unknown error occurred');
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            console.error(msg);
+            setError(msg);
+            showSnackbar(msg, 'error');
         } finally {
             setLoading(false);
         }
     }, [username, daysFilter]);
 
-    // Optimized full year stats
+    // Full year stats
     const loadFullYearRepoStats = useCallback(async () => {
         if (!username.trim()) return;
-
         setFullYearLoading(true);
+
         try {
             const currentYear = new Date().getFullYear();
             const start = new Date(`${currentYear}-01-01T00:00:00Z`);
@@ -534,13 +359,14 @@ export default function Home() {
             const fullYearStats = results
                 .filter((result): result is ProcessedRepo => result !== null && result.stats.totalCommits > 0)
                 .map(result => result.stats);
-                
-                console.log('Filtered stats:', fullYearStats.map(s => s.name));
+
+            console.log('Filtered stats:', fullYearStats.map(s => s.name));
 
             setFullYearRepoStats(fullYearStats);
-            // setFullYearRepoStats(results); // RESULTS HERE 
+            showSnackbar('Full year stats loaded!', 'info');
         } catch (error) {
             console.error('Error loading full year stats:', error);
+            showSnackbar('Failed to load full year stats', 'error');
         } finally {
             setFullYearLoading(false);
         }
@@ -560,8 +386,12 @@ export default function Home() {
             };
 
             setInactivityData(filteredData);
+            if (filteredData.inactiveRepos?.length > 0) {
+                showSnackbar(`Found ${filteredData.inactiveRepos.length} inactive repos`, 'warning');
+            }
         } catch (err) {
             console.error('Error loading inactivity sections:', err);
+            showSnackbar('Failed to load inactivity data', 'error');
         }
     }, [username]);
 
@@ -582,25 +412,28 @@ export default function Home() {
         };
     }, [username, loadFullYearRepoStats, loadInactivitySections]);
 
-
-
     return (
         <div id="app">
-           { /* Add NotificationBell here */}
-                        {inactivityData && notificationSettings.toast && (
-                            <NotificationBell
-                                inactivityData={inactivityData}
-                                username={username}
-                                onNotificationClick={(repoName: string, type: 'stale' | 'idle' | 'inactive') => {
-                                    console.log(`Notification clicked: ${repoName} (${type})`);
-                                    // Optionally scroll to the section
-                                    const element = document.getElementById('inactivitySections');
-                                    if (element) {
-                                        element.scrollIntoView({ behavior: 'smooth' });
-                                    }
-                                }}
-                            />
-                        )}
+            {/* Render the global Snackbar component */}
+            <Snackbar />
+
+            {/* Notification Bell */}
+            {inactivityData && notificationSettings.toast && (
+                <NotificationBell
+                    inactivityData={inactivityData}
+                    username={username}
+                    onNotificationClick={(repoName: string, type: 'stale' | 'idle' | 'inactive') => {
+                        showSnackbar(`Navigating to ${repoName}`, 'info');
+                        console.log(`Notification clicked: ${repoName} (${type})`);
+                        // Optionally scroll to the section
+                        const element = document.getElementById('inactivitySections');
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }}
+                />
+            )}
+
             <header className="app-header">
                 <h1 className="app-title">Activity Viewer</h1>
                 <div className="input-container">
@@ -652,7 +485,6 @@ export default function Home() {
                 {chartData && (
                     <>
                         <Charts chartData={chartData} daysFilter={parseInt(daysFilter)} username={username} />
-
                     </>
                 )}
 
@@ -665,11 +497,11 @@ export default function Home() {
 
                 <RepoActivitySection className="mt-6" />
 
-                    <RepoStats
-                        stats={fullYearRepoStats}
-                        username={username}
-                        loading={fullYearLoading}
-                    />
+                <RepoStats
+                    stats={fullYearRepoStats}
+                    username={username}
+                    loading={fullYearLoading}
+                />
 
                 <TodoList
                     projectId="github-tracker"
