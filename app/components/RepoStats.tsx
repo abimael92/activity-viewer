@@ -1141,10 +1141,12 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                         <h4 className="repo-name" style={{ color: stat.color }}>
                                                             {isMobile ? (stat.name.length > 20 ? `${stat.name.substring(0, 20)}...` : stat.name) : stat.name}
                                                         </h4>
-
                                                         <div className="list-repo-meta">
-                                                            <span>{formatDate(stat.createdAt)}</span>
-                                                            <span>{getRepositoryAge(stat.createdAt)}</span>
+                                                            <div className="repo-meta-text">
+                                                                <span>{formatDate(stat.createdAt)}</span>
+                                                                <span>{getRepositoryAge(stat.createdAt)}</span>
+                                                            </div>
+
                                                             {stat.language && !isMobile && (
                                                                 <span
                                                                     className="repo-language"
@@ -1158,6 +1160,7 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
                                                                 </span>
                                                             )}
                                                         </div>
+
                                                         {/* ENHANCED: Use enhanced badges if enabled */}
                                                         <RepoStatusBadges
                                                             deployment={stat.deployment}
