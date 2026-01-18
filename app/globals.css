@@ -1123,15 +1123,20 @@ body {
     background: linear-gradient(135deg, #00d4aa, #00c4a7);
     border: none;
     color: white;
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    padding: 1rem 1.25rem !important;
+    font-size: 1rem  !important;
     font-weight: 500;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s ease !important;
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    margin: 0.85rem 0 !important;
+    -webkit-transition: all 0.2s ease !important;
+    -moz-transition: all 0.2s ease !important;
+    -ms-transition: all 0.2s ease !important;
+    -o-transition: all 0.2s ease !important;
 }
 
 .date-section button:hover {
