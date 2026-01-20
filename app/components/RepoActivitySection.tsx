@@ -1,7 +1,8 @@
 // components/RepoActivitySection.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react'; // Add useRef
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import './RepoActivitySection.css';
 import Tooltip from './Tooltip';
 import DateModal from "./DateModal";
@@ -482,7 +483,17 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                         className="refresh-btn"
                         disabled={isManualRefresh}
                     >
-                        {isManualRefresh ? 'Refreshing...' : 'Refresh Now'}
+                        {isManualRefresh ? (
+                            <>
+                                <Loader2 className="refresh-icon loading" />
+                                <span className="refresh-text">Refreshing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <RefreshCw className="refresh-icon" />
+                                <span className="refresh-text">Refresh Now</span>
+                            </>
+                        )}
                     </button>
                 </Tooltip>
             </div>
