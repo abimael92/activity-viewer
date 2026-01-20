@@ -230,6 +230,7 @@
 }
 
 
+/* TUS ESTILOS ORIGINALES - NO CAMBIAR */
 .refresh-btn {
     background: rgba(100, 108, 255, 0.2);
     border: 1px solid #646cff;
@@ -245,6 +246,38 @@
     background: rgba(100, 108, 255, 0.3);
     transform: translateY(-1px);
 }
+
+.refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.refresh-btn:disabled:hover {
+    background: rgba(100, 108, 255, 0.2) !important;
+}
+
+.refresh-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 0.5rem;
+}
+
+.refresh-icon.loading {
+    animation: spin 1s linear infinite;
+}
+
+.refresh-text {
+    line-height: 1;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+
+
 
 /* ===== STATES ===== */
 
