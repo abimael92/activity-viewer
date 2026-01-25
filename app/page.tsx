@@ -85,7 +85,7 @@ const processRepoCommits = async (
                     until: end.toISOString(),
                     perPage: 100,
                     page,
-                });
+                }) as GitHubCommit[];
                 if (commits.length === 0) break;
             } catch (error) {
                 console.error(`Failed to parse JSON for ${repo.name}:`, error);
