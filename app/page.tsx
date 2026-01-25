@@ -225,7 +225,10 @@ export default function Home() {
 
             // Parallel API calls
             await fetchGitHubUser(username);
-            const repos = await fetchGitHubRepos(username, { sort: 'updated', perPage: 10 });
+            const repos = await fetchGitHubRepos(username, {
+                sort: 'updated',
+                perPage: 10,
+            }) as GitHubRepo[];
 
             if (!Array.isArray(repos)) {
                 throw new Error(`Failed to fetch repositories`);
@@ -349,7 +352,7 @@ export default function Home() {
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            const repos = await fetchGitHubRepos(username, { perPage: 30 });
+            const repos = await fetchGitHubRepos(username, { perPage: 30 }) as GitHubRepo[];
             const filteredRepos = repos.filter((repo: GitHubRepo) => !IGNORED_REPOS.includes(repo.name));
 
             const topRepos = filteredRepos.slice(0, 20);
