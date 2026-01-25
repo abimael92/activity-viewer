@@ -53,7 +53,10 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
 
         setReposLoading(true);
         try {
-            const reposData = await fetchGitHubRepos(username, { perPage: 100, sort: 'updated' });
+            const reposData = await fetchGitHubRepos(username, {
+                perPage: 100,
+                sort: 'updated',
+            }) as GitHubRepo[];
             const colorMap: Record<string, string> = {};
 
             const formattedRepos = reposData.map((repo: GitHubRepo) => {
