@@ -1,4 +1,5 @@
-import { fetchWithAuth } from './github';
+import 'server-only';
+import { githubRequest } from './githubServer';
 
 export type DeploymentStatus = {
 	deployed: boolean;
@@ -37,27 +38,27 @@ export const checkDeploymentStatus = async (
 		const checks = [
 			// Check for deployment config files
 			{
-				url: `https://api.github.com/repos/${username}/${repoName}/contents/vercel.json`,
+				path: `/repos/${username}/${repoName}/contents/vercel.json`,
 				type: 'vercel' as const,
 				urlPattern: `https://${repoName}.vercel.app`,
 			},
 			{
-				url: `https://api.github.com/repos/${username}/${repoName}/contents/netlify.toml`,
+				path: `/repos/${username}/${repoName}/contents/netlify.toml`,
 				type: 'netlify' as const,
 				urlPattern: `https://${repoName}.netlify.app`,
 			},
 			{
-				url: `https://api.github.com/repos/${username}/${repoName}/contents/heroku.yml`,
+				path: `/repos/${username}/${repoName}/contents/heroku.yml`,
 				type: 'heroku' as const,
 				urlPattern: `https://${repoName}.herokuapp.com`,
 			},
 			{
-				url: `https://api.github.com/repos/${username}/${repoName}/contents/render.yaml`,
+				path: `/repos/${username}/${repoName}/contents/render.yaml`,
 				type: 'render' as const,
 				urlPattern: `https://${repoName}.onrender.com`,
 			},
 			{
-				url: `https://api.github.com/repos/${username}/${repoName}/contents/railway.json`,
+				path: `/repos/${username}/${repoName}/contents/railway.json`,
 				type: 'railway' as const,
 				urlPattern: '',
 			},
@@ -68,8 +69,8 @@ export const checkDeploymentStatus = async (
 		let deploymentUrl: string | undefined;
 
 		try {
-			const pagesRes = await fetchWithAuth(
-				`https://api.github.com/repos/${username}/${repoName}/pages`
+			const pagesRes = await githubRequest(
+				`/repos/${username}/${repoName}/pages`
 			);
 			if (pagesRes.ok) {
 				const pagesData = await pagesRes.json();
@@ -85,7 +86,7 @@ export const checkDeploymentStatus = async (
 		// Check deployment config files
 		for (const check of checks) {
 			try {
-				const res = await fetchWithAuth(check.url);
+				const res = await githubRequest(check.path);
 				if (res.ok) {
 					deploymentType = check.type;
 					if (check.urlPattern && !deploymentUrl) {
@@ -101,8 +102,8 @@ export const checkDeploymentStatus = async (
 		// Check package.json for deployment scripts
 		if (!deploymentType) {
 			try {
-				const packageRes = await fetchWithAuth(
-					`https://api.github.com/repos/${username}/${repoName}/contents/package.json`
+				const packageRes = await githubRequest(
+					`/repos/${username}/${repoName}/contents/package.json`
 				);
 				if (packageRes.ok) {
 					const packageData = await packageRes.json();
@@ -126,8 +127,8 @@ export const checkDeploymentStatus = async (
 		// Check README for deployment URLs
 		if (!deploymentUrl) {
 			try {
-				const readmeRes = await fetchWithAuth(
-					`https://api.github.com/repos/${username}/${repoName}/readme`
+				const readmeRes = await githubRequest(
+					`/repos/${username}/${repoName}/readme`
 				);
 				if (readmeRes.ok) {
 					const readme = await readmeRes.json();
@@ -176,8 +177,8 @@ export const checkMergeStatus = async (
 ): Promise<MergeStatus> => {
 	try {
 		// Get latest pull requests
-		const prsRes = await fetchWithAuth(
-			`https://api.github.com/repos/${username}/${repoName}/pulls?state=closed&sort=updated&direction=desc&per_page=5`
+		const prsRes = await githubRequest(
+			`/repos/${username}/${repoName}/pulls?state=closed&sort=updated&direction=desc&per_page=5`
 		);
 
 		if (!prsRes.ok) {
@@ -204,8 +205,8 @@ export const checkMergeStatus = async (
 
 		try {
 			// Check combined status
-			const statusRes = await fetchWithAuth(
-				`https://api.github.com/repos/${username}/${repoName}/commits/${lastMergedPR.merge_commit_sha}/status`
+			const statusRes = await githubRequest(
+				`/repos/${username}/${repoName}/commits/${lastMergedPR.merge_commit_sha}/status`
 			);
 
 			if (statusRes.ok) {
@@ -214,8 +215,8 @@ export const checkMergeStatus = async (
 			}
 
 			// Check check runs
-			const checkRunsRes = await fetchWithAuth(
-				`https://api.github.com/repos/${username}/${repoName}/commits/${lastMergedPR.merge_commit_sha}/check-runs`
+			const checkRunsRes = await githubRequest(
+				`/repos/${username}/${repoName}/commits/${lastMergedPR.merge_commit_sha}/check-runs`
 			);
 
 			if (checkRunsRes.ok) {
@@ -236,8 +237,8 @@ export const checkMergeStatus = async (
 		// Count recent merge failures
 		let mergeFailureCount = 0;
 		try {
-			const allPrsRes = await fetchWithAuth(
-				`https://api.github.com/repos/${username}/${repoName}/pulls?state=closed&sort=updated&direction=desc&per_page=20`
+			const allPrsRes = await githubRequest(
+				`/repos/${username}/${repoName}/pulls?state=closed&sort=updated&direction=desc&per_page=20`
 			);
 			if (allPrsRes.ok) {
 				const allPrs = await allPrsRes.json();

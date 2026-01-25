@@ -1,76 +1,33 @@
-interface InactivityData {
-	inactiveRepos: {
-		name: string;
-		reason: string;
-		lastCommit: Date | null;
-		daysWithoutCommits: number | string;
-	}[];
-	repos15Days: {
-		name: string;
-		reason: string;
-		lastCommit: Date | null;
-		daysWithoutCommits: number | string;
-	}[];
-}
+import type { DeploymentStatus, InactivityData, MergeStatus } from '@/types';
 
 const CACHE_DURATION = 15 * 60 * 1000;
 
-export async function fetchWithAuth(url: string): Promise<Response> {
+async function apiRequest<T>(
+	endpoint: string,
+	params: Record<string, string | number | undefined> = {}
+): Promise<T> {
+	const searchParams = new URLSearchParams();
+	Object.entries(params).forEach(([key, value]) => {
+		if (value !== undefined) {
+			searchParams.set(key, String(value));
+		}
+	});
+
+	const url = searchParams.toString()
+		? `/api/github/${endpoint}?${searchParams.toString()}`
+		: `/api/github/${endpoint}`;
+
 	try {
-		const response = await fetch(url, {
-			headers: {
-				Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
-				'User-Agent': 'GitHub-Commit-Visualizer',
-				Accept: 'application/vnd.github.v3+json',
-			},
-		});
-
-		if (response.status === 403) {
-			const remaining = response.headers.get('X-RateLimit-Remaining');
-			const resetTime = response.headers.get('X-RateLimit-Reset');
-
-			if (remaining === '0') {
-				const resetDate = new Date(Number(resetTime) * 1000);
-				const now = new Date();
-				const minutesUntilReset = Math.ceil(
-					(resetDate.getTime() - now.getTime()) / (1000 * 60)
-				);
-				throw new Error(
-					`GitHub API rate limit exceeded. Resets in ${minutesUntilReset} minutes (${resetDate.toLocaleTimeString()})`
-				);
-			}
-		}
-
-		if (response.status === 404) {
-			throw new Error('User or repository not found');
-		}
-
-		if (response.status === 429) {
-			throw new Error(
-				'Too many requests. Please wait a moment before trying again.'
-			);
-		}
+		const response = await fetch(url, { cache: 'no-store' });
 
 		if (!response.ok) {
-			switch (response.status) {
-				case 401:
-					throw new Error('Unauthorized: missing or invalid GitHub token');
-				case 403:
-					throw new Error(
-						'Forbidden: token has no access or rate limit exceeded'
-					);
-				case 404:
-					throw new Error(
-						'Not found: GitHub endpoint or resource does not exist'
-					);
-				case 422:
-					throw new Error('Unprocessable entity: invalid request parameters');
-				default:
-					throw new Error(`GitHub API error: ${response.status}`);
-			}
+			const errorPayload = await response.json().catch(() => null);
+			const message =
+				errorPayload?.error || `GitHub API error: ${response.status}`;
+			throw new Error(message);
 		}
 
-		return response;
+		return response.json() as Promise<T>;
 	} catch (error) {
 		if (
 			error instanceof Error &&
@@ -116,6 +73,49 @@ export function setCachedData<T>(key: string, data: T): void {
 	}
 }
 
+export async function fetchGitHubUser(username: string) {
+	return apiRequest<Record<string, unknown>>('user', { username });
+}
+
+export async function fetchGitHubRepos(
+	username: string,
+	options: { perPage?: number; sort?: string; page?: number } = {}
+) {
+	return apiRequest<unknown[]>('repos', {
+		username,
+		per_page: options.perPage,
+		sort: options.sort,
+		page: options.page,
+	});
+}
+
+export async function fetchGitHubCommits(
+	username: string,
+	repo: string,
+	options: {
+		since?: string;
+		until?: string;
+		perPage?: number;
+		page?: number;
+	} = {}
+) {
+	return apiRequest<unknown[]>('commits', {
+		username,
+		repo,
+		since: options.since,
+		until: options.until,
+		per_page: options.perPage,
+		page: options.page,
+	});
+}
+
+export async function fetchRepoStatus(username: string, repo: string) {
+	return apiRequest<{ deployment: DeploymentStatus; mergeStatus: MergeStatus }>(
+		'repo-status',
+		{ username, repo }
+	);
+}
+
 export async function loadInactivityData(
 	username: string
 ): Promise<InactivityData> {
@@ -123,98 +123,10 @@ export async function loadInactivityData(
 	const cachedData = getCachedData<InactivityData>(cacheKey);
 	if (cachedData) return cachedData;
 
-	const thirtyDaysAgo = new Date();
-	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-	const twentyOneDaysAgo = new Date();
-	twentyOneDaysAgo.setDate(twentyOneDaysAgo.getDate() - 21);
-
-	const fifteenDaysAgo = new Date();
-	fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
 	try {
-		const repoRes = await fetchWithAuth(
-			`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`
-		);
-
-		if (!repoRes.ok) return { inactiveRepos: [], repos15Days: [] };
-
-		const repos = await repoRes.json();
-		const inactiveRepos: InactivityData['inactiveRepos'] = [];
-		const repos15Days: InactivityData['repos15Days'] = [];
-
-		const delay = (ms: number) =>
-			new Promise((resolve) => setTimeout(resolve, ms));
-
-		for (const repo of repos) {
-			try {
-				// GET LATEST COMMIT FIRST - FIXED
-				const commitsRes = await fetchWithAuth(
-					`https://api.github.com/repos/${username}/${repo.name}/commits?per_page=1`
-				);
-
-				if (commitsRes.status === 409 || commitsRes.status === 404) {
-					inactiveRepos.push({
-						name: repo.name,
-						reason:
-							commitsRes.status === 409
-								? 'Empty repository'
-								: 'Repository not found',
-						lastCommit: null,
-						daysWithoutCommits: 'N/A',
-					});
-					continue;
-				}
-
-				if (!commitsRes.ok) continue;
-
-				const commits = await commitsRes.json();
-
-				// FIXED LOGIC - GET REAL LAST COMMIT DATE
-				let lastCommitDate: Date | null = null;
-				let daysWithoutCommits: number | string = 'N/A';
-
-				if (commits.length > 0 && commits[0]?.commit?.author?.date) {
-					lastCommitDate = new Date(commits[0].commit.author.date);
-					const today = new Date();
-					daysWithoutCommits = Math.floor(
-						(today.getTime() - lastCommitDate.getTime()) / (1000 * 60 * 60 * 24)
-					);
-				}
-
-				const repoData = {
-					name: repo.name,
-					reason: '',
-					lastCommit: lastCommitDate,
-					daysWithoutCommits,
-				};
-
-				// FIXED CONDITIONS
-				if (
-					daysWithoutCommits === 'N/A' ||
-					(typeof daysWithoutCommits === 'number' && daysWithoutCommits >= 21)
-				) {
-					inactiveRepos.push({
-						...repoData,
-						reason: 'No commits in last 21 days',
-					});
-				} else if (
-					typeof daysWithoutCommits === 'number' &&
-					daysWithoutCommits >= 15
-				) {
-					repos15Days.push({
-						...repoData,
-						reason: 'No commits in last 15 days',
-					});
-				}
-
-				await delay(300);
-			} catch {
-				continue;
-			}
-		}
-
-		const inactivityData: InactivityData = { inactiveRepos, repos15Days };
+		const inactivityData = await apiRequest<InactivityData>('inactivity', {
+			username,
+		});
 		setCachedData(cacheKey, inactivityData);
 		return inactivityData;
 	} catch {

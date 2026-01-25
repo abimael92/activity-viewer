@@ -6,6 +6,7 @@ import { RefreshCw, Loader2 } from 'lucide-react';
 import './RepoActivitySection.css';
 import Tooltip from './Tooltip';
 import DateModal from "./DateModal";
+import { fetchGitHubCommits, fetchGitHubRepos } from '@/lib/github';
 
 interface RepoActivity {
     name: string;
@@ -50,19 +51,12 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
             let page = 1;
 
             while (page <= 3) {
-                const response = await fetch(
-                    `https://api.github.com/repos/${username}/${repoName}/commits?since=${since}&until=${until}&per_page=100&page=${page}`,
-                    {
-                        headers: {
-                            'Authorization': `token ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-
-                if (!response.ok) break;
-
-                const commits = await response.json();
+                const commits = await fetchGitHubCommits(username, repoName, {
+                    since,
+                    until,
+                    perPage: 100,
+                    page,
+                });
                 if (commits.length === 0) break;
 
                 allCommits = allCommits.concat(commits);
@@ -122,19 +116,10 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
 
         try {
             // Fetch user's repositories
-            const reposResponse = await fetch(
-                `https://api.github.com/users/${username}/repos?sort=updated&per_page=20`,
-                {
-                    headers: {
-                        'Authorization': `token ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                }
-            );
-
-            if (!reposResponse.ok) throw new Error('Failed to fetch repositories');
-
-            const repos = await reposResponse.json();
+            const repos = await fetchGitHubRepos(username, {
+                sort: 'updated',
+                perPage: 20
+            }) as Array<{ name: string }>;
 
             // Fetch commit counts for each repo
             const activityPromises = repos.map(async (repo: { name: string }) => {
@@ -197,7 +182,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 isManualRefreshRef.current = false;
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [username, fetchRepoCommits, getExtraDateRanges]);
 
     // Add this useEffect to refresh extra dates data
@@ -205,8 +189,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         if (extraDates.length > 0 && activityData.length > 0) {
             fetchRepoActivity(true, false); // Add this line
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [extraDates]);
+    }, [extraDates, activityData.length, fetchRepoActivity]);
 
     // Update grid columns when extraDates changes
     useEffect(() => {

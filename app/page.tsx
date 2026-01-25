@@ -6,8 +6,15 @@ import InactivitySections from './components/InactivitySections';
 import RepoStats from './components/RepoStats';
 import { RepoActivitySection } from './components/RepoActivitySection';
 import NotificationBell from './components/NotificationBell';
-import { getRepoStatus } from '@/lib/repoStatus';
-import { fetchWithAuth, getCachedData, setCachedData, loadInactivityData } from '@/lib/github';
+import {
+	fetchGitHubCommits,
+	fetchGitHubRepos,
+	fetchGitHubUser,
+	fetchRepoStatus,
+	getCachedData,
+	setCachedData,
+	loadInactivityData,
+} from '@/lib/github';
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 import TodoList from './components/TodoList';
 import { COLORS } from '@/lib/colors';
@@ -69,17 +76,16 @@ const processRepoCommits = async (
     const lastDayCommits: CommitData[] = [];
 
     try {
-        const statusPromise = getRepoStatus(username, repo.name);
+        const statusPromise = fetchRepoStatus(username, repo.name);
         while (page <= 3) {
-            const commitsRes = await fetchWithAuth(
-                `https://api.github.com/repos/${username}/${repo.name}/commits?since=${start.toISOString()}&until=${end.toISOString()}&per_page=100&page=${page}`
-            );
-
-            if (!commitsRes.ok) break;
-
             let commits;
             try {
-                commits = await commitsRes.json();
+                commits = await fetchGitHubCommits(username, repo.name, {
+                    since: start.toISOString(),
+                    until: end.toISOString(),
+                    perPage: 100,
+                    page,
+                }) as GitHubCommit[];
                 if (commits.length === 0) break;
             } catch (error) {
                 console.error(`Failed to parse JSON for ${repo.name}:`, error);
@@ -218,15 +224,15 @@ export default function Home() {
             }
 
             // Parallel API calls
-            const [userRes, repoRes] = await Promise.all([
-                fetchWithAuth(`https://api.github.com/users/${username}`),
-                fetchWithAuth(`https://api.github.com/users/${username}/repos?sort=updated&per_page=10`)
-            ]);
+            await fetchGitHubUser(username);
+            const repos = await fetchGitHubRepos(username, {
+                sort: 'updated',
+                perPage: 10,
+            }) as GitHubRepo[];
 
-            if (!userRes.ok) throw new Error(`User "${username}" not found on GitHub`);
-            if (!repoRes.ok) throw new Error(`Failed to fetch repositories`);
-
-            const repos = await repoRes.json();
+            if (!Array.isArray(repos)) {
+                throw new Error(`Failed to fetch repositories`);
+            }
             if (repos.length === 0) throw new Error(`User "${username}" has no public repos.`);
 
             const end = new Date();
@@ -346,8 +352,7 @@ export default function Home() {
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            const repoRes = await fetchWithAuth(`https://api.github.com/users/${username}/repos?per_page=30`);
-            const repos = await repoRes.json();
+            const repos = await fetchGitHubRepos(username, { perPage: 30 }) as GitHubRepo[];
             const filteredRepos = repos.filter((repo: GitHubRepo) => !IGNORED_REPOS.includes(repo.name));
 
             const topRepos = filteredRepos.slice(0, 20);

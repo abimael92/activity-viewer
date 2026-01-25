@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, MouseEvent, useMemo } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Todo } from '@/types/todo';
-import { fetchWithAuth } from '@/lib/github';
+import { fetchGitHubRepos } from '@/lib/github';
 import { getRepoColor } from '@/lib/colors';
 
 interface GitHubRepo {
@@ -53,30 +53,27 @@ export default function TodoList({ projectId, githubUsername = '' }: TodoListPro
 
         setReposLoading(true);
         try {
-            const repoRes = await fetchWithAuth(
-                `https://api.github.com/users/${username}/repos?per_page=100&sort=updated`
-            );
+            const reposData = await fetchGitHubRepos(username, {
+                perPage: 100,
+                sort: 'updated',
+            }) as GitHubRepo[];
+            const colorMap: Record<string, string> = {};
 
-            if (repoRes.ok) {
-                const reposData = await repoRes.json();
-                const colorMap: Record<string, string> = {};
+            const formattedRepos = reposData.map((repo: GitHubRepo) => {
+                const color = getRepoColor(repo.name);
+                colorMap[repo.id.toString()] = color;
 
-                const formattedRepos = reposData.map((repo: GitHubRepo) => {
-                    const color = getRepoColor(repo.name);
-                    colorMap[repo.id.toString()] = color;
+                return {
+                    id: repo.id.toString(),
+                    name: repo.name,
+                    full_name: repo.full_name,
+                    description: repo.description,
+                    language: repo.language ?? undefined,
+                };
+            });
 
-                    return {
-                        id: repo.id.toString(),
-                        name: repo.name,
-                        full_name: repo.full_name,
-                        description: repo.description,
-                        language: repo.language ?? undefined,
-                    };
-                });
-
-                setRepos(formattedRepos);
-                setRepoColors(colorMap);
-            }
+            setRepos(formattedRepos);
+            setRepoColors(colorMap);
         } catch (error) {
             console.error('Error fetching repos:', error);
             setRepos([]);
