@@ -55,6 +55,15 @@ interface CommitData {
     author?: string;
 }
 
+interface RepoActivity {
+    name: string;
+    yesterdayCommits: number;
+    todayCommits: number;
+    change: number;
+    trend: 'up' | 'down' | 'same';
+    extra: Record<string, number>;
+}
+
 const IGNORED_REPOS = [
     "ecommerce-fe", "college_project", "my_portfolio2", "ecommerce_be", "postList",
     "my-portfolio", "cine-kachorro", "interview-codingchallenge-fsjs",
@@ -176,7 +185,7 @@ const processRepoCommits = async (
 };
 
 export default function Home() {
-    const [username, setUsername] = useState('abimael92');
+    const [username, setUsername] = useState('');
     const [daysFilter, setDaysFilter] = useState('7');
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [inactivityData, setInactivityData] = useState<InactivityData | null>(null);
@@ -185,6 +194,9 @@ export default function Home() {
     const [error, setError] = useState<string | null>(null);
     const [fullYearRepoStats, setFullYearRepoStats] = useState<RepoStat[]>([]);
     const [showTotal, setShowTotal] = useState(true);
+    const [repoActivityData, setRepoActivityData] = useState<RepoActivity[]>([]);
+    const [repoActivityLoading, setRepoActivityLoading] = useState(false);
+    const [repoActivityDates, setRepoActivityDates] = useState({ today: '', yesterday: '' });
     const [notificationSettings, setNotificationSettings] = useState({
         sound: true,
         toast: true,
@@ -400,6 +412,109 @@ export default function Home() {
         }
     }, [username]);
 
+    // Fetch repo activity data (today/yesterday commits)
+    const fetchRepoActivity = useCallback(async (extraDates: string[] = []) => {
+        if (!username.trim()) return;
+
+        setRepoActivityLoading(true);
+
+        try {
+            // Calculate dates
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const yesterdayStart = new Date(yesterday);
+            yesterdayStart.setHours(0, 0, 0, 0);
+            const yesterdayEnd = new Date(yesterday);
+            yesterdayEnd.setHours(23, 59, 59, 999);
+
+            const todayStart = new Date(today);
+            todayStart.setHours(0, 0, 0, 0);
+            const todayEnd = new Date(today);
+            todayEnd.setHours(23, 59, 59, 999);
+
+            setRepoActivityDates({
+                today: today.toISOString().split('T')[0],
+                yesterday: yesterday.toISOString().split('T')[0]
+            });
+
+            // Fetch user's repositories
+            const repos = await fetchGitHubRepos(username, {
+                sort: 'updated',
+                perPage: 20
+            }) as Array<{ name: string }>;
+
+            // Helper function to fetch commits for a date range
+            const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
+                try {
+                    let allCommits: unknown[] = [];
+                    let page = 1;
+
+                    while (page <= 3) {
+                        const commits = await fetchGitHubCommits(username, repoName, {
+                            since,
+                            until,
+                            perPage: 100,
+                            page,
+                        });
+                        if (commits.length === 0) break;
+                        allCommits = allCommits.concat(commits);
+                        page++;
+                    }
+
+                    return allCommits.length;
+                } catch (error) {
+                    console.error(`Error fetching commits for ${repoName}:`, error);
+                    return 0;
+                }
+            };
+
+            // Fetch commit counts for each repo
+            const activityPromises = repos.map(async (repo: { name: string }) => {
+                const todayCommits = await fetchRepoCommits(repo.name, todayStart.toISOString(), todayEnd.toISOString());
+                const yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
+
+                const change = todayCommits - yesterdayCommits;
+                const trend: 'up' | 'down' | 'same' = change > 0 ? 'up' : change < 0 ? 'down' : 'same';
+
+                // Fetch commit count for each extra date
+                const extra: Record<string, number> = {};
+                for (const dateStr of extraDates) {
+                    const day = new Date(dateStr);
+                    const start = new Date(day);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(day);
+                    end.setHours(23, 59, 59, 999);
+                    const commitCount = await fetchRepoCommits(repo.name, start.toISOString(), end.toISOString());
+                    extra[dateStr] = commitCount;
+                }
+
+                return {
+                    name: repo.name,
+                    yesterdayCommits,
+                    todayCommits,
+                    change: Math.abs(change),
+                    trend,
+                    extra
+                };
+            });
+
+            const activities = await Promise.all(activityPromises);
+
+            // Filter & sort
+            const filteredActivities = activities
+                .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0 || Object.values(repo.extra).some((count: unknown) => Number(count) > 0))
+                .sort((a, b) => b.todayCommits - a.todayCommits);
+
+            setRepoActivityData(filteredActivities);
+        } catch (error) {
+            console.error('Error fetching repo activity:', error);
+        } finally {
+            setRepoActivityLoading(false);
+        }
+    }, [username]);
+
     // Debounced effects with cleanup
     useEffect(() => {
         const abortController = new AbortController();
@@ -408,6 +523,7 @@ export default function Home() {
             if (!abortController.signal.aborted) {
                 loadFullYearRepoStats();
                 loadInactivitySections();
+                fetchRepoActivity();
             }
         }, 500);
 
@@ -415,7 +531,7 @@ export default function Home() {
             clearTimeout(timeoutId);
             abortController.abort();
         };
-    }, [username, loadFullYearRepoStats, loadInactivitySections]);
+    }, [username, loadFullYearRepoStats, loadInactivitySections, fetchRepoActivity]);
 
     return (
         <div id="app">
@@ -500,7 +616,14 @@ export default function Home() {
                     </div>
                 )}
 
-                <RepoActivitySection className="mt-6" />
+                <RepoActivitySection 
+                    className="mt-6" 
+                    username={username}
+                    activityData={repoActivityData}
+                    loading={repoActivityLoading}
+                    dates={repoActivityDates}
+                    onRefresh={(extraDates) => fetchRepoActivity(extraDates)}
+                />
 
                 <RepoStats
                     stats={fullYearRepoStats}
