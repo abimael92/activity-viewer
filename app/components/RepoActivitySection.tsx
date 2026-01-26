@@ -1,12 +1,11 @@
 // components/RepoActivitySection.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import './RepoActivitySection.css';
 import Tooltip from './Tooltip';
 import DateModal from "./DateModal";
-import { fetchGitHubCommits, fetchGitHubRepos } from '@/lib/github';
 
 interface RepoActivity {
     name: string;
@@ -19,13 +18,21 @@ interface RepoActivity {
 
 interface RepoActivitySectionProps {
     className?: string;
-    username?: string;
+    username: string;
+    activityData: RepoActivity[];
+    loading: boolean;
+    dates: { today: string; yesterday: string };
+    onRefresh: (extraDates: string[]) => void;
 }
 
-export function RepoActivitySection({ className = '', username = 'abimael92' }: RepoActivitySectionProps) {
-    const [activityData, setActivityData] = useState<RepoActivity[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [dates, setDates] = useState({ today: '', yesterday: '' });
+export function RepoActivitySection({ 
+    className = '', 
+    username, 
+    activityData, 
+    loading, 
+    dates, 
+    onRefresh 
+}: RepoActivitySectionProps) {
     const [extraDates, setExtraDates] = useState<string[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [timeUntilRefresh, setTimeUntilRefresh] = useState(3600); // 1 hour in seconds
@@ -36,8 +43,6 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
     const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const activityDataRef = useRef(activityData);
-
     // Format seconds to MM:SS
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -45,151 +50,22 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const fetchRepoCommits = useCallback(async (repoName: string, since: string, until: string): Promise<number> => {
-        try {
-            let allCommits: unknown[] = [];
-            let page = 1;
-
-            while (page <= 3) {
-                const commits = await fetchGitHubCommits(username, repoName, {
-                    since,
-                    until,
-                    perPage: 100,
-                    page,
-                });
-                if (commits.length === 0) break;
-
-                allCommits = allCommits.concat(commits);
-                page++;
-            }
-
-            return allCommits.length;
-        } catch (error) {
-            console.error(`Error fetching commits for ${repoName}:`, error);
-            return 0;
-        }
-    }, [username]);
-
-    const getExtraDateRanges = useCallback(() =>
-        extraDates.map(d => {
-            const day = new Date(d);
-            const start = new Date(day); start.setHours(0, 0, 0, 0);
-            const end = new Date(day); end.setHours(23, 59, 59, 999);
-            return { date: d, start: start.toISOString(), end: end.toISOString() };
-        }), [extraDates]);
-
-    const fetchRepoActivity = useCallback(async (refreshExtraDatesOnly = false, isManual = false) => {
+    // Refresh handler that calls parent's onRefresh
+    const handleRefresh = (isManual = false) => {
         if (isManual) {
             setIsManualRefresh(true);
             isManualRefreshRef.current = true;
         }
+        onRefresh(extraDates);
+    };
 
-        if (!refreshExtraDatesOnly) {
-            setLoading(true);
-        }
-
-        // Calculate dates
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        // Set yesterday to start of day (00:00:00)
-        const yesterdayStart = new Date(yesterday);
-        yesterdayStart.setHours(0, 0, 0, 0);
-
-        // Set yesterday to end of day (23:59:59)
-        const yesterdayEnd = new Date(yesterday);
-        yesterdayEnd.setHours(23, 59, 59, 999);
-
-        // Set today to start of day (00:00:00)
-        const todayStart = new Date(today);
-        todayStart.setHours(0, 0, 0, 0);
-
-        // Set today to end of day (23:59:59)
-        const todayEnd = new Date(today);
-        todayEnd.setHours(23, 59, 59, 999);
-
-        setDates({
-            today: today.toISOString().split('T')[0],
-            yesterday: yesterday.toISOString().split('T')[0]
-        });
-
-        try {
-            // Fetch user's repositories
-            const repos = await fetchGitHubRepos(username, {
-                sort: 'updated',
-                perPage: 20
-            }) as Array<{ name: string }>;
-
-            // Fetch commit counts for each repo
-            const activityPromises = repos.map(async (repo: { name: string }) => {
-                let todayCommits, yesterdayCommits;
-
-                if (!refreshExtraDatesOnly) {
-                    // Only fetch today and yesterday data on initial load
-                    todayCommits = await fetchRepoCommits(repo.name, todayStart.toISOString(), todayEnd.toISOString());
-                    yesterdayCommits = await fetchRepoCommits(repo.name, yesterdayStart.toISOString(), yesterdayEnd.toISOString());
-                } else {
-                    // When refreshing extra dates only, use existing data
-                    const existingRepo = activityDataRef.current.find(r => r.name === repo.name);
-
-                    todayCommits = existingRepo?.todayCommits || 0;
-                    yesterdayCommits = existingRepo?.yesterdayCommits || 0;
-                }
-
-                const change = todayCommits - yesterdayCommits;
-                const trend: 'up' | 'down' | 'same' = change > 0 ? 'up' : change < 0 ? 'down' : 'same';
-
-                // Fetch commit count for each extra date
-                const extra: Record<string, number> = {};
-                const extraDateRanges = getExtraDateRanges();
-
-                for (const range of extraDateRanges) {
-                    const commitCount = await fetchRepoCommits(
-                        repo.name,
-                        range.start,
-                        range.end
-                    );
-                    extra[range.date] = commitCount;
-                }
-
-                return {
-                    name: repo.name,
-                    yesterdayCommits,
-                    todayCommits,
-                    change: Math.abs(change),
-                    trend,
-                    extra
-                };
-            });
-
-            // After all repos are processed
-            const activities = await Promise.all(activityPromises);
-
-            // Filter & sort
-            const filteredActivities = activities
-                .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0 || Object.values(repo.extra).some((count: unknown) => Number(count) > 0))
-                .sort((a, b) => b.todayCommits - a.todayCommits);
-
-            setActivityData(filteredActivities);
-
-        } catch (error) {
-            console.error('Error fetching repo activity:', error);
-        } finally {
-            if (!refreshExtraDatesOnly) {
-                setLoading(false);
-                setIsManualRefresh(false);
-                isManualRefreshRef.current = false;
-            }
-        }
-    }, [username, fetchRepoCommits, getExtraDateRanges]);
-
-    // Add this useEffect to refresh extra dates data
+    // When extra dates are added, refresh data with those dates
     useEffect(() => {
-        if (extraDates.length > 0 && activityData.length > 0) {
-            fetchRepoActivity(true, false); // Add this line
+        if (extraDates.length > 0) {
+            onRefresh(extraDates);
         }
-    }, [extraDates, activityData.length, fetchRepoActivity]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [extraDates]);
 
     // Update grid columns when extraDates changes
     useEffect(() => {
@@ -221,7 +97,7 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 if (prev <= 1) {
                     // Auto-refresh when timer hits 0
                     if (!isManualRefreshRef.current) {
-                        fetchRepoActivity(false, false); // Auto refresh
+                        handleRefresh(false); // Auto refresh
                     }
                     return 3600; // Reset to 1 hour
                 }
@@ -234,13 +110,13 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 clearInterval(countdownIntervalRef.current);
             }
         };
-    }, [fetchRepoActivity]);
+    }, []);
 
     // Auto-refresh effect (every hour)
     useEffect(() => {
         autoRefreshIntervalRef.current = setInterval(() => {
             if (!isManualRefreshRef.current) {
-                fetchRepoActivity(false, false); // Auto refresh
+                handleRefresh(false); // Auto refresh
             }
         }, 60 * 60 * 1000); // 1 hour
 
@@ -249,23 +125,21 @@ export function RepoActivitySection({ className = '', username = 'abimael92' }: 
                 clearInterval(autoRefreshIntervalRef.current);
             }
         };
-    }, [fetchRepoActivity]);
+    }, []);
 
-    // Initial fetch
+    // Reset manual refresh flag when loading completes
     useEffect(() => {
-        fetchRepoActivity(false, false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [username]);
-
-    useEffect(() => {
-        activityDataRef.current = activityData;
-    }, [activityData]);
+        if (!loading && isManualRefresh) {
+            setIsManualRefresh(false);
+            isManualRefreshRef.current = false;
+        }
+    }, [loading, isManualRefresh]);
 
     // Manual refresh handler - WON'T affect countdown
-    const handleManualRefresh = useCallback(() => {
-        fetchRepoActivity(false, true); // Manual refresh
+    const handleManualRefresh = () => {
+        handleRefresh(true); // Manual refresh
         // Timer continues counting down independently
-    }, [fetchRepoActivity]);
+    };
 
     const getTrendIcon = (trend: string) => {
         switch (trend) {
