@@ -15,6 +15,9 @@ import {
 	setCachedData,
 	loadInactivityData,
 } from '@/lib/github';
+
+// Shorter cache duration for repo activity (5 minutes)
+const REPO_ACTIVITY_CACHE_DURATION = 5 * 60 * 1000;
 import { ChartData, InactiveRepo, InactivityData, RepoStat } from '@/types';
 import TodoList from './components/TodoList';
 import { COLORS } from '@/lib/colors';
@@ -185,7 +188,7 @@ const processRepoCommits = async (
 };
 
 export default function Home() {
-    const [username, setUsername] = useState('');
+    const [username, setUsername] = useState(process.env.NEXT_PUBLIC_DEFAULT_USERNAME || '');
     const [daysFilter, setDaysFilter] = useState('7');
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [inactivityData, setInactivityData] = useState<InactivityData | null>(null);
@@ -196,7 +199,17 @@ export default function Home() {
     const [showTotal, setShowTotal] = useState(true);
     const [repoActivityData, setRepoActivityData] = useState<RepoActivity[]>([]);
     const [repoActivityLoading, setRepoActivityLoading] = useState(false);
-    const [repoActivityDates, setRepoActivityDates] = useState({ today: '', yesterday: '' });
+    const [repoActivityRateLimited, setRepoActivityRateLimited] = useState(false);
+    const [repoActivityRateLimitMessage, setRepoActivityRateLimitMessage] = useState<string>('');
+    const [repoActivityDates, setRepoActivityDates] = useState(() => {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return {
+            today: today.toISOString().split('T')[0],
+            yesterday: yesterday.toISOString().split('T')[0]
+        };
+    });
     const [notificationSettings, setNotificationSettings] = useState({
         sound: true,
         toast: true,
@@ -414,8 +427,31 @@ export default function Home() {
 
     // Fetch repo activity data (today/yesterday commits)
     const fetchRepoActivity = useCallback(async (extraDates: string[] = []) => {
-        if (!username.trim()) return;
+        if (!username.trim()) {
+            setRepoActivityLoading(false);
+            return;
+        }
 
+        // Check cache first (cache for 5 minutes to reduce API calls)
+        const cacheKey = `repo_activity_${username}_${extraDates.join(',')}`;
+        try {
+            if (typeof window !== 'undefined') {
+                const cached = localStorage.getItem(`gh_${cacheKey}`);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < REPO_ACTIVITY_CACHE_DURATION && Array.isArray(data) && data.length > 0) {
+                        console.log('[RepoActivity] Using cached data');
+                        setRepoActivityData(data);
+                        setRepoActivityLoading(false);
+                        return;
+                    }
+                }
+            }
+        } catch (e) {
+            // Ignore cache errors
+        }
+
+        console.log('[RepoActivity] Starting fetch for username:', username);
         setRepoActivityLoading(true);
 
         try {
@@ -444,6 +480,13 @@ export default function Home() {
                 sort: 'updated',
                 perPage: 20
             }) as Array<{ name: string }>;
+
+            if (!Array.isArray(repos) || repos.length === 0) {
+                console.warn('No repositories found for user:', username);
+                setRepoActivityData([]);
+                setRepoActivityLoading(false);
+                return;
+            }
 
             // Helper function to fetch commits for a date range
             const fetchRepoCommits = async (repoName: string, since: string, until: string): Promise<number> => {
@@ -502,14 +545,72 @@ export default function Home() {
 
             const activities = await Promise.all(activityPromises);
 
+            console.log('[RepoActivity] Fetched activities:', activities.length);
+
             // Filter & sort
             const filteredActivities = activities
                 .filter(repo => repo.yesterdayCommits > 0 || repo.todayCommits > 0 || Object.values(repo.extra).some((count: unknown) => Number(count) > 0))
                 .sort((a, b) => b.todayCommits - a.todayCommits);
 
+            console.log('[RepoActivity] Filtered activities:', filteredActivities.length);
             setRepoActivityData(filteredActivities);
+            
+            // Reset rate limit flag on successful fetch
+            setRepoActivityRateLimited(false);
+            setRepoActivityRateLimitMessage('');
+            
+            // Cache the data for 5 minutes
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(
+                        `gh_${cacheKey}`,
+                        JSON.stringify({
+                            data: filteredActivities,
+                            timestamp: Date.now(),
+                        })
+                    );
+                }
+            } catch (e) {
+                console.warn('Could not cache repo activity data:', e);
+            }
         } catch (error) {
-            console.error('Error fetching repo activity:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error('Error fetching repo activity:', errorMessage, error);
+            
+            // Check if it's a rate limit error
+            const isRateLimit = errorMessage.includes('rate limit') || errorMessage.includes('Rate limit');
+            
+            if (isRateLimit) {
+                // Mark as rate limited to prevent further auto-refreshes
+                setRepoActivityRateLimited(true);
+                setRepoActivityRateLimitMessage(errorMessage);
+                // Don't clear existing data on rate limit, just show warning
+                showSnackbar(`Rate limit exceeded. Using cached data if available. ${errorMessage}`, 'warning');
+                // Try to use any cached data we have (even if expired)
+                try {
+                    if (typeof window !== 'undefined') {
+                        const fallbackKey = `repo_activity_${username}_`;
+                        const keys = Object.keys(localStorage).filter(k => k.startsWith(`gh_${fallbackKey}`));
+                        if (keys.length > 0) {
+                            const cached = localStorage.getItem(keys[0]);
+                            if (cached) {
+                                const { data } = JSON.parse(cached);
+                                if (Array.isArray(data) && data.length > 0) {
+                                    setRepoActivityData(data);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Ignore cache errors
+                }
+            } else {
+                // Reset rate limit flag on successful fetch
+                setRepoActivityRateLimited(false);
+                setRepoActivityRateLimitMessage('');
+                setRepoActivityData([]);
+                showSnackbar(`Failed to load repository activity: ${errorMessage}`, 'error');
+            }
         } finally {
             setRepoActivityLoading(false);
         }
@@ -517,13 +618,22 @@ export default function Home() {
 
     // Debounced effects with cleanup
     useEffect(() => {
+        if (!username.trim()) {
+            // Reset data if username is empty
+            setRepoActivityData([]);
+            setRepoActivityLoading(false);
+            return;
+        }
+
         const abortController = new AbortController();
 
         const timeoutId = setTimeout(() => {
-            if (!abortController.signal.aborted) {
+            if (!abortController.signal.aborted && username.trim() && !repoActivityRateLimited) {
                 loadFullYearRepoStats();
                 loadInactivitySections();
                 fetchRepoActivity();
+            } else if (repoActivityRateLimited) {
+                console.log('[RepoActivity] Skipping fetch due to rate limit');
             }
         }, 500);
 
@@ -531,7 +641,7 @@ export default function Home() {
             clearTimeout(timeoutId);
             abortController.abort();
         };
-    }, [username, loadFullYearRepoStats, loadInactivitySections, fetchRepoActivity]);
+    }, [username, loadFullYearRepoStats, loadInactivitySections, fetchRepoActivity, repoActivityRateLimited]);
 
     return (
         <div id="app">
@@ -616,14 +726,18 @@ export default function Home() {
                     </div>
                 )}
 
-                <RepoActivitySection 
-                    className="mt-6" 
-                    username={username}
-                    activityData={repoActivityData}
-                    loading={repoActivityLoading}
-                    dates={repoActivityDates}
-                    onRefresh={(extraDates) => fetchRepoActivity(extraDates)}
-                />
+                {username.trim() && (
+                    <RepoActivitySection 
+                        className="mt-6" 
+                        username={username}
+                        activityData={repoActivityData}
+                        loading={repoActivityLoading}
+                        dates={repoActivityDates}
+                        onRefresh={(extraDates) => fetchRepoActivity(extraDates)}
+                        rateLimited={repoActivityRateLimited}
+                        rateLimitMessage={repoActivityRateLimitMessage}
+                    />
+                )}
 
                 <RepoStats
                     stats={fullYearRepoStats}
