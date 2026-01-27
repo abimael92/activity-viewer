@@ -13,6 +13,8 @@ export type DeploymentStatus = {
 		| 'other';
 	deploymentUrl?: string;
 	lastDeployment?: string;
+	lastDeploymentCommitHash?: string;
+	lastDeploymentCommitMessage?: string;
 };
 
 export type MergeStatus = {
@@ -21,6 +23,7 @@ export type MergeStatus = {
 	lastMergeTitle?: string;
 	mergeFailureCount: number;
 	lastMergeCommitHash?: string;
+	lastMergeCommitMessage?: string;
 };
 
 type PullRequest = {
@@ -157,11 +160,38 @@ export const checkDeploymentStatus = async (
 			}
 		}
 
+		// Get latest commit info for deployment
+		let lastDeploymentCommitHash: string | undefined;
+		let lastDeploymentCommitMessage: string | undefined;
+		let lastDeployment: string | undefined;
+
+		if (deploymentType) {
+			try {
+				const commitsRes = await githubRequest(
+					`/repos/${username}/${repoName}/commits?per_page=1`
+				);
+				if (commitsRes.ok) {
+					const commits = await commitsRes.json();
+					if (commits.length > 0) {
+						const latestCommit = commits[0];
+						lastDeploymentCommitHash = latestCommit.sha;
+						lastDeploymentCommitMessage = latestCommit.commit?.message || '';
+						lastDeployment = latestCommit.commit?.author?.date || new Date().toISOString();
+					}
+				}
+			} catch (error) {
+				// Ignore - use current date as fallback
+				lastDeployment = new Date().toISOString();
+			}
+		}
+
 		return {
 			deployed: !!deploymentType,
 			deploymentType,
 			deploymentUrl,
-			lastDeployment: new Date().toISOString(),
+			lastDeployment: lastDeployment || (deploymentType ? new Date().toISOString() : undefined),
+			lastDeploymentCommitHash,
+			lastDeploymentCommitMessage,
 		};
 	} catch (error) {
 		console.error(`Error checking deployment for ${repoName}:`, error);
@@ -252,12 +282,29 @@ export const checkMergeStatus = async (
 			// Ignore error for failure count
 		}
 
+		// Get commit message from merge commit hash
+		let lastMergeCommitMessage: string | undefined;
+		if (lastMergedPR.merge_commit_sha) {
+			try {
+				const commitRes = await githubRequest(
+					`/repos/${username}/${repoName}/commits/${lastMergedPR.merge_commit_sha}`
+				);
+				if (commitRes.ok) {
+					const commit = await commitRes.json();
+					lastMergeCommitMessage = commit.commit?.message || '';
+				}
+			} catch (error) {
+				// Ignore - use PR title as fallback
+			}
+		}
+
 		return {
 			lastMergeSuccess: mergeSuccess,
 			lastMergeDate: lastMergedPR.merged_at,
 			lastMergeTitle: lastMergedPR.title,
 			mergeFailureCount,
 			lastMergeCommitHash: lastMergedPR.merge_commit_sha,
+			lastMergeCommitMessage: lastMergeCommitMessage || lastMergedPR.title,
 		};
 	} catch (error) {
 		console.error(`Error checking merge status for ${repoName}:`, error);

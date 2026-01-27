@@ -3550,6 +3550,50 @@ body {
     border-radius: 8px;
 }
 
+.deployment-status-time {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.deployment-commit-info {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.deployment-commit-hash {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+}
+
+.deployment-commit-hash .commit-link {
+    font-family: monospace;
+    color: #646cff;
+    text-decoration: none;
+    padding: 0.125rem 0.375rem;
+    background: rgba(100, 108, 255, 0.1);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.deployment-commit-hash .commit-link:hover {
+    background: rgba(100, 108, 255, 0.2);
+    color: #747bff;
+}
+
+.deployment-commit-message {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+    word-break: break-word;
+    font-style: italic;
+}
+
 .deployment-status-actions {
     display: flex;
     gap: 0.5rem;
@@ -3661,6 +3705,50 @@ body {
     display: flex;
     align-items: center;
     gap: 0.25rem;
+}
+
+.merge-commit-message {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    word-break: break-word;
+    font-style: italic;
+    padding-left: 0.5rem;
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.merge-commit-hash {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.merge-commit-hash .commit-link {
+    font-family: monospace;
+    color: #4caf50;
+    text-decoration: none;
+    padding: 0.125rem 0.375rem;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.merge-status-card.failed .merge-commit-hash .commit-link {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.merge-commit-hash .commit-link:hover {
+    background: rgba(76, 175, 80, 0.2);
+    color: #66bb6a;
+}
+
+.merge-status-card.failed .merge-commit-hash .commit-link:hover {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff8787;
 }
 
 .merge-status-actions {

@@ -23,6 +23,8 @@ interface RepoActivitySectionProps {
     loading: boolean;
     dates: { today: string; yesterday: string };
     onRefresh: (extraDates: string[]) => void;
+    rateLimited?: boolean;
+    rateLimitMessage?: string;
 }
 
 export function RepoActivitySection({ 
@@ -31,7 +33,9 @@ export function RepoActivitySection({
     activityData, 
     loading, 
     dates, 
-    onRefresh 
+    onRefresh,
+    rateLimited = false,
+    rateLimitMessage
 }: RepoActivitySectionProps) {
     const [extraDates, setExtraDates] = useState<string[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
@@ -56,6 +60,7 @@ export function RepoActivitySection({
             setIsManualRefresh(true);
             isManualRefreshRef.current = true;
         }
+        // Always allow manual refresh, even if rate limited
         onRefresh(extraDates);
     };
 
@@ -323,14 +328,26 @@ export function RepoActivitySection({
 
             {/* Footer */}
             <div className="activity-footer">
+                {rateLimited && (
+                    <div className="rate-limit-warning">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: '8px' }}>
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <span className="rate-limit-text">
+                            {rateLimitMessage || 'Rate limit exceeded. Showing cached data.'}
+                        </span>
+                    </div>
+                )}
                 <Tooltip content="Data is automatically fetched from GitHub API">
                     <div className="footer-info">
                         <span className="update-status">
-                            {isManualRefresh ? 'Refreshing data...' : 'Updates automatically'}
+                            {isManualRefresh ? 'Refreshing data...' : rateLimited ? 'Using cached data' : 'Updates automatically'}
                         </span>
-                        <span className="countdown-timer">
-                            • Next auto-refresh in: <span className="time-remaining">{formatTime(timeUntilRefresh)}</span>
-                        </span>
+                        {!rateLimited && (
+                            <span className="countdown-timer">
+                                • Next auto-refresh in: <span className="time-remaining">{formatTime(timeUntilRefresh)}</span>
+                            </span>
+                        )}
                     </div>
                 </Tooltip>
 

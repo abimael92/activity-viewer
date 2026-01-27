@@ -207,11 +207,41 @@
 /* ===== FOOTER ===== */
 .activity-footer {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
     margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rate-limit-warning {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    color: #ffc107;
+    font-size: 0.85rem;
+    width: 100%;
+}
+
+.rate-limit-text {
+    flex: 1;
+    line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+    .activity-footer {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .rate-limit-warning {
+        width: auto;
+        margin-right: 1rem;
+    }
 }
 
 .activity-footer p {

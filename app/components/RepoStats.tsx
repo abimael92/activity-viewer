@@ -40,21 +40,33 @@ const generateVercelUrl = (repoName: string): string => {
 
 const DeploymentStatusCard: React.FC<{
     deployment?: DeploymentStatus;
-    repoName?: string; // Add this
-}> = ({ deployment, repoName }) => {
+    repoName?: string;
+    username?: string;
+}> = ({ deployment, repoName, username }) => {
     
     if (!deployment) {
         console.log('DeploymentStatusCard: No deployment data provided for repo:', repoName);
         return null;
     }
 
-    console.log('DeploymentStatusCard received:', {
-        deployment,
-        deployed: deployment.deployed,
-        deploymentType: deployment.deploymentType,
-        deploymentUrl: deployment.deploymentUrl,
-        lastDeployment: deployment.lastDeployment
-    });
+    const formatDateTime = (dateStr: string | undefined) => {
+        if (!dateStr) return 'N/A';
+        try {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return 'Invalid date';
+        }
+    };
+
+    const commitUrl = deployment.lastDeploymentCommitHash && username && repoName
+        ? `https://github.com/${username}/${repoName}/commit/${deployment.lastDeploymentCommitHash}`
+        : null;
 
     return (
         <div className="deployment-status-card">
@@ -85,14 +97,38 @@ const DeploymentStatusCard: React.FC<{
                                 <circle cx="12" cy="12" r="10" />
                                 <polyline points="12 6 12 12 16 14" />
                             </svg>
-                            {new Date(deployment.lastDeployment).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            })}
+                            {formatDateTime(deployment.lastDeployment)}
                         </span>
                     )}
                 </div>
+                {deployment.lastDeploymentCommitHash && (
+                    <div className="deployment-commit-info">
+                        <div className="deployment-commit-hash">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: '4px' }}>
+                                <circle cx="12" cy="12" r="3" />
+                                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" />
+                            </svg>
+                            {commitUrl ? (
+                                <a 
+                                    href={commitUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="commit-link"
+                                >
+                                    {deployment.lastDeploymentCommitHash.substring(0, 7)}
+                                </a>
+                            ) : (
+                                <span>{deployment.lastDeploymentCommitHash.substring(0, 7)}</span>
+                            )}
+                        </div>
+                        {deployment.lastDeploymentCommitMessage && (
+                            <div className="deployment-commit-message" title={deployment.lastDeploymentCommitMessage}>
+                                {deployment.lastDeploymentCommitMessage.split('\n')[0].substring(0, 80)}
+                                {deployment.lastDeploymentCommitMessage.length > 80 ? '...' : ''}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             {deployment.deployed && deployment.deploymentUrl && (
                 <div className="deployment-status-actions">
@@ -125,8 +161,31 @@ const DeploymentStatusCard: React.FC<{
     );
 };
 
-const MergeStatusCard: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus }) => {
+const MergeStatusCard: React.FC<{ 
+    mergeStatus?: MergeStatus;
+    repoName?: string;
+    username?: string;
+}> = ({ mergeStatus, repoName, username }) => {
     if (!mergeStatus) return null;
+
+    const formatDateTime = (dateStr: string | undefined) => {
+        if (!dateStr) return 'N/A';
+        try {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return 'Invalid date';
+        }
+    };
+
+    const commitUrl = mergeStatus.lastMergeCommitHash && username && repoName
+        ? `https://github.com/${username}/${repoName}/commit/${mergeStatus.lastMergeCommitHash}`
+        : null;
 
     return (
         <div className={`merge-status-card ${mergeStatus.lastMergeSuccess ? 'success' : 'failed'}`}>
@@ -151,6 +210,12 @@ const MergeStatusCard: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus 
                         {mergeStatus.lastMergeTitle}
                     </p>
                 )}
+                {mergeStatus.lastMergeCommitMessage && mergeStatus.lastMergeCommitMessage !== mergeStatus.lastMergeTitle && (
+                    <p className="merge-commit-message" title={mergeStatus.lastMergeCommitMessage}>
+                        {mergeStatus.lastMergeCommitMessage.split('\n')[0].substring(0, 80)}
+                        {mergeStatus.lastMergeCommitMessage.length > 80 ? '...' : ''}
+                    </p>
+                )}
                 <div className="merge-status-timeline">
                     {mergeStatus.lastMergeDate && (
                         <span className="merge-status-time">
@@ -158,13 +223,27 @@ const MergeStatusCard: React.FC<{ mergeStatus?: MergeStatus }> = ({ mergeStatus 
                                 <circle cx="12" cy="12" r="10" />
                                 <polyline points="12 6 12 12 16 14" />
                             </svg>
-                            {new Date(mergeStatus.lastMergeDate).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
+                            {formatDateTime(mergeStatus.lastMergeDate)}
+                        </span>
+                    )}
+                    {mergeStatus.lastMergeCommitHash && (
+                        <span className="merge-commit-hash">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: '4px' }}>
+                                <circle cx="12" cy="12" r="3" />
+                                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" />
+                            </svg>
+                            {commitUrl ? (
+                                <a 
+                                    href={commitUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="commit-link"
+                                >
+                                    {mergeStatus.lastMergeCommitHash.substring(0, 7)}
+                                </a>
+                            ) : (
+                                <span>{mergeStatus.lastMergeCommitHash.substring(0, 7)}</span>
+                            )}
                         </span>
                     )}
                     {mergeStatus.mergeFailureCount && mergeStatus.mergeFailureCount > 0 && (
@@ -1012,12 +1091,20 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                                 {/* ENHANCED: Use new Deployment Status Card */}
                                                 {stat.deployment && (
-                                                    <DeploymentStatusCard deployment={stat.deployment} repoName={stat.name} />
+                                                    <DeploymentStatusCard 
+                                                        deployment={stat.deployment} 
+                                                        repoName={stat.name}
+                                                        username={username}
+                                                    />
                                                 )}
 
                                                 {/* ENHANCED: Use new Merge Status Card */}
                                                 {stat.mergeStatus && stat.mergeStatus.lastMergeSuccess !== null && (
-                                                    <MergeStatusCard mergeStatus={stat.mergeStatus} />
+                                                    <MergeStatusCard 
+                                                        mergeStatus={stat.mergeStatus}
+                                                        repoName={stat.name}
+                                                        username={username}
+                                                    />
                                                 )}
 
                                                 {/* Recent Activity Section */}
@@ -1384,12 +1471,20 @@ export default function RepoStats({ stats, loading, username }: RepoStatsProps) 
 
                                                         {/* ENHANCED: Use new Deployment Status Card */}
                                                         {stat.deployment && (
-                                                            <DeploymentStatusCard deployment={stat.deployment} />
+                                                            <DeploymentStatusCard 
+                                                                deployment={stat.deployment}
+                                                                repoName={stat.name}
+                                                                username={username}
+                                                            />
                                                         )}
 
                                                         {/* ENHANCED: Use new Merge Status Card */}
                                                         {stat.mergeStatus && stat.mergeStatus.lastMergeSuccess !== null && (
-                                                            <MergeStatusCard mergeStatus={stat.mergeStatus} />
+                                                            <MergeStatusCard 
+                                                                mergeStatus={stat.mergeStatus}
+                                                                repoName={stat.name}
+                                                                username={username}
+                                                            />
                                                         )}
 
                                                         {/* Recent Activity Section */}
