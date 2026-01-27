@@ -35,6 +35,8 @@ export interface DeploymentStatus {
 		| 'other';
 	deploymentUrl?: string;
 	lastDeployment?: string;
+	lastDeploymentCommitHash?: string;
+	lastDeploymentCommitMessage?: string;
 }
 
 export interface MergeStatus {
@@ -43,6 +45,7 @@ export interface MergeStatus {
 	lastMergeTitle?: string;
 	mergeFailureCount?: number;
 	lastMergeCommitHash?: string;
+	lastMergeCommitMessage?: string;
 }
 
 export interface RepoStat {
